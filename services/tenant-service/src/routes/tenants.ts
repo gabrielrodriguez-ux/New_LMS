@@ -218,12 +218,35 @@ tenantRoutes.post(
 
 // GET /api/tenants (Platform Admin - list all)
 tenantRoutes.get('/', async (c) => {
-    const tenants = await prisma.tenant.findMany({
-        where: { status: 'active' },
-        orderBy: { name: 'asc' }
-    })
+    // HOTFIX: Bypass Prisma/Port 5432 due to network block. Use generic REST for list.
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_ANON_KEY
 
-    return c.json({ data: tenants })
+    if (!supabaseUrl || !supabaseKey) {
+        console.error("Missing Supabase credentials for hotfix")
+        return c.json({ error: 'Configuration error' }, 500)
+    }
+
+    try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/tenants?select=*&status=eq.active&order=name.asc`, {
+            headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+            }
+        })
+
+        if (!response.ok) {
+            const err = await response.text()
+            console.error("Supabase REST Error:", err)
+            throw new Error(`Fetch failed: ${response.status} ${err}`)
+        }
+
+        const tenants = await response.json()
+        return c.json({ data: tenants })
+    } catch (e) {
+        console.error("Fallback fetch failed:", e)
+        return c.json({ error: 'Failed to fetch tenants' }, 500)
+    }
 })
 
 export { tenantRoutes }

@@ -22,7 +22,9 @@ const createUserSchema = z.object({
     department: z.string().optional(),
     managerId: z.string().uuid().optional(),
     roleIds: z.array(z.string().uuid()).optional(),
-    status: z.string().optional()
+    role: z.string().optional(),
+    status: z.string().optional(),
+    client_id: z.string().optional()
 })
 
 const updateUserSchema = createUserSchema.partial()
@@ -30,6 +32,45 @@ const updateUserSchema = createUserSchema.partial()
 const bulkDeactivateSchema = z.object({
     userIds: z.array(z.string().uuid()).min(1),
     reason: z.string().optional()
+})
+
+// POST /api/users - Create User
+userRoutes.post('/', zValidator('json', createUserSchema), async (c) => {
+    const body = c.req.valid('json')
+    const tenantId = c.get('tenantId') as string // Current context tenant, but body can override for superadmin
+
+    const sbUrl = process.env.SUPABASE_URL || ''
+    const sbKey = process.env.SUPABASE_ANON_KEY || ''
+    const supabase = createClient(sbUrl, sbKey)
+
+    // Map payload to DB columns
+    const userData = {
+        id: crypto.randomUUID(), // DB does not auto-generate ID
+        // email: body.email, // Column does not exist in public.users schema
+        first_name: body.firstName,
+        last_name: body.lastName,
+        job_title: body.department,
+        role: body.role || 'student',
+        status: body.status || 'active',
+        client_id: body.client_id || tenantId,
+        created_at: new Date().toISOString(),
+        // updated_at: new Date().toISOString() // Column does not exist in public.users schema
+    }
+
+    console.log("Creating User Payload:", JSON.stringify(userData, null, 2));
+
+    const { data, error } = await supabase
+        .from('users')
+        .insert(userData)
+        .select()
+        .single()
+
+    if (error) {
+        console.error("Supabase Create Error:", error)
+        return c.json({ error: error.message, details: error }, 500)
+    }
+
+    return c.json(data, 201)
 })
 
 // GET /api/users

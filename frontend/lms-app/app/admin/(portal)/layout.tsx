@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BookOpen, FileText, Settings, LogOut, Briefcase, Calendar, Trophy } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, FileText, Settings, LogOut, Briefcase, Calendar, Trophy, Shield } from "lucide-react";
 
 export default function AdminLayout({
     children,
@@ -14,6 +14,7 @@ export default function AdminLayout({
     const menuItems = [
         { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
         { icon: Users, label: "Users & Groups", href: "/admin/users" },
+        { icon: Shield, label: "Staff", href: "/admin/staff" },
         { icon: Briefcase, label: "Clients & Subs", href: "/admin/clients" }, // New Item
         { icon: BookOpen, label: "Classrooms & Content", href: "/admin/classrooms" },
         { icon: Calendar, label: "Tutoring Sessions", href: "/admin/sessions" },
