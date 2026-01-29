@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id                String    @id @default(uuid())
+  tenantId          String    @map("tenant_id")
+  title             String
+  description       String?
+  shortDescription  String?   @map("short_description")
+  thumbnailUrl      String?   @map("thumbnail_url")
+  hours             Decimal   @db.Decimal(5, 2)
+  level             String    @default("basico") // basico, intermedio, avanzado
+  familyProfessional String?  @map("family_professional")
+  status            String    @default("draft") // draft, published, archived
+  version           Int       @default(1)
+  fundaeCompatible  Boolean   @default(false) @map("fundae_compatible")
+  tags              String[]  @default([])
+  createdBy         String?   @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  publishedAt       DateTime? @map("published_at")
+
+  modules  Module[]
+  versions CourseVersion[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, familyProfessional])
+  @@map("courses")
+}
+
+model Module {
+  id              String   @id @default(uuid())
+  courseId        String   @map("course_id")
+  title           String
+  description     String?
+  type            String   // video, pdf, text, quiz, scorm, lti
+  contentUrl      String?  @map("content_url")
+  durationMinutes Int      @default(0) @map("duration_minutes")
+  orderIndex      Int      @map("order_index")
+  isMandatory     Boolean  @default(true) @map("is_mandatory")
+  xpReward        Int      @default(50) @map("xp_reward")
+  metadata        Json     @default("{}") // For quiz questions, SCORM params, etc.
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, orderIndex])
+  @@map("modules")
+}
+
+model CourseVersion {
+  id          String   @id @default(uuid())
+  courseId    String   @map("course_id")
+  version     Int
+  snapshot    Json     // Full course data at this version
+  changedBy   String?  @map("changed_by")
+  changedAt   DateTime @default(now()) @map("changed_at")
+  changeNotes String?  @map("change_notes")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, version])
+  @@map("course_versions")
+}
+
+model CourseTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  type        String   // onboarding, compliance, skills
+  structure   Json     // Template structure
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("course_templates")
+}

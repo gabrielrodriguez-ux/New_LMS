@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("client_id")
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  role         String?   @map("role") // Direct column in this schema version
+  jobTitle     String?   @map("job_title")
+  avatarUrl    String?   @map("avatar_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Ignored / Missing columns in DB
+  deletedAt    DateTime? @ignore
+  status       String?   @ignore
+  department   String?   @ignore
+  managerId    String?   @ignore
+  email        String?   @ignore 
+  dni          String?   @ignore
+  passwordHash String?   @ignore
+  preferences  Json?     @ignore
+  ssoId        String?   @ignore
+  lastLoginAt  DateTime? @ignore
+  updatedAt    DateTime? @ignore
+
+  userRoles UserRole[] // Keep relation definition to avoid breaking other files, but it might be empty
+  sessions  Session[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String   // alumno, manager, docente, ld_manager, admin, c_level
+  displayName String   @map("display_name")
+  permissions Json     @default("[]")
+  isSystem    Boolean  @default(false) @map("is_system") // Predefined roles
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userRoles UserRole[]
+
+  @@unique([tenantId, name])
+  @@map("roles")
+}
+
+model UserRole {
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  grantedAt DateTime @default(now()) @map("granted_at")
+  grantedBy String?  @map("granted_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  tenantId    String   @map("tenant_id")
+  deviceInfo  String?  @map("device_info")
+  ipAddress   String?  @map("ip_address")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId, expiresAt])
+  @@map("sessions")
+}
+
+model ImportJob {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  status       String   @default("pending") // pending, processing, completed, failed
+  fileName     String   @map("file_name")
+  totalRows    Int      @default(0) @map("total_rows")
+  processedRows Int     @default(0) @map("processed_rows")
+  successRows  Int      @default(0) @map("success_rows")
+  errorRows    Int      @default(0) @map("error_rows")
+  errors       Json     @default("[]")
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+
+  @@index([tenantId, status])
+  @@map("import_jobs")
+}

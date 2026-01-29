@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Progress {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  userId           String   @map("user_id")
+  courseId         String   @map("course_id")
+  moduleId         String   @map("module_id")
+  status           String   @default("not_started") // not_started, in_progress, completed
+  timeSpentSeconds Int      @default(0) @map("time_spent_seconds")
+  score            Decimal? @db.Decimal(5, 2)
+  completedAt      DateTime? @map("completed_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, userId, moduleId])
+  @@map("progress")
+}

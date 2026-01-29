@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserXp {
+  userId       String   @id @map("user_id")
+  tenantId     String   @map("tenant_id")
+  totalXp      Int      @default(0) @map("total_xp")
+  currentLevel Int      @default(1) @map("current_level")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, totalXp(sort: Desc)])
+  @@map("user_xp")
+}
+
+model XpTransaction {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  tenantId   String   @map("tenant_id")
+  amount     Int
+  source     String   // module_complete, course_complete, quiz_pass, challenge, streak, bonus
+  sourceId   String?  @map("source_id")
+  multiplier Decimal  @default(1.0) @db.Decimal(3, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, userId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("xp_transactions")
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  iconUrl     String?  @map("icon_url")
+  criteria    Json     // { type, threshold, conditions }
+  rarity      String   @default("common") // common, uncommon, rare, epic, legendary
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userBadges UserBadge[]
+
+  @@unique([tenantId, name])
+  @@map("badges")
+}
+
+model UserBadge {
+  userId   String   @map("user_id")
+  badgeId  String   @map("badge_id")
+  tenantId String   @map("tenant_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+  shared   Boolean  @default(false)
+
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@index([tenantId, earnedAt])
+  @@map("user_badges")
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  type        String   // weekly, bonus, special
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  xpReward    Int      @map("xp_reward")
+  criteria    Json     // { type, target, courseIds }
+  status      String   @default("upcoming") // upcoming, active, ended
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  participants ChallengeParticipant[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, startDate, endDate])
+  @@map("challenges")
+}
+
+model ChallengeParticipant {
+  userId      String   @map("user_id")
+  challengeId String   @map("challenge_id")
+  tenantId    String   @map("tenant_id")
+  progress    Int      @default(0)
+  completed   Boolean  @default(false)
+  completedAt DateTime? @map("completed_at")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, challengeId])
+  @@index([tenantId, challengeId, progress(sort: Desc)])
+  @@map("challenge_participants")
+}
+
+model LevelConfig {
+  level       Int    @id
+  tenantId    String @map("tenant_id")
+  xpRequired  Int    @map("xp_required")
+  name        String
+  description String?
+
+  @@unique([tenantId, level])
+  @@map("level_configs")
+}
