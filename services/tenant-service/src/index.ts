@@ -29,7 +29,15 @@ app.use('*', errorHandler)
 app.get('/health', (c) => c.json({ status: 'ok', service: 'tenant-service' }))
 
 // Protected routes
-app.use('/api/*', authMiddleware)
+// Protected routes (Exclude public GET routes)
+app.use('/api/*', async (c, next) => {
+    // Public routes that don't need auth
+    if (c.req.method === 'GET' && (c.req.path === '/api/tenants' || c.req.path === '/api/tenants/')) {
+        await next()
+        return
+    }
+    return authMiddleware(c, next)
+})
 
 // Mount routes
 app.route('/api/tenants', tenantRoutes)
