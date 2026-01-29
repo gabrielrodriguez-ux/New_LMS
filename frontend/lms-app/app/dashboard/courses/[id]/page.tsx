@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Play, CheckCircle, Circle, FileText, Download, ChevronDown, ChevronUp, MessageSquare, Mic, BookOpen, ChevronRight, ChevronLeft, Volume2, Maximize, Layers, AlignLeft } from "lucide-react";
+import { ArrowLeft, Play, CheckCircle, Circle, FileText, Download, ChevronDown, ChevronUp, MessageSquare, Mic, BookOpen, ChevronRight, ChevronLeft, Volume2, Maximize, Layers, AlignLeft, Menu, X } from "lucide-react";
 import { apiClient } from "@/utils/api-client";
 import DiscussionTab from "@/components/DiscussionTab";
 import ResourcesTab from "@/components/ResourcesTab";
@@ -42,6 +42,7 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
     const [noteContent, setNoteContent] = useState("");
     const [isSaved, setIsSaved] = useState(false);
     const [progress, setProgress] = useState<any[]>([]);
+    const [showSidebar, setShowSidebar] = useState(false);
     const [error, setError] = useState<{ type: 'invalid_id' | 'not_found' | 'server_error'; message: string } | null>(null);
 
     useEffect(() => {
@@ -223,10 +224,10 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
                         <div className="flex flex-col items-center text-center">
                             {/* Error Icon */}
                             <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${error.type === 'invalid_id' ? 'bg-yellow-100' :
-                                    error.type === 'not_found' ? 'bg-red-100' : 'bg-orange-100'
+                                error.type === 'not_found' ? 'bg-red-100' : 'bg-orange-100'
                                 }`}>
                                 <svg className={`w-8 h-8 ${error.type === 'invalid_id' ? 'text-yellow-600' :
-                                        error.type === 'not_found' ? 'text-red-600' : 'text-orange-600'
+                                    error.type === 'not_found' ? 'text-red-600' : 'text-orange-600'
                                     }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
@@ -271,16 +272,23 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
     return (
         <div className="h-screen flex flex-col bg-white">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between shrink-0 h-16">
-                <div className="flex items-center gap-4">
-                    <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
-                        <ArrowLeft className="w-5 h-5" />
+            <header className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 sm:gap-4">
+                    <Link href="/dashboard" className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
+                        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Link>
                     <div className="flex items-center gap-2">
-                        <span className="bg-primary text-white text-xs font-bold px-2 py-1 rounded">COURSE</span>
-                        <h1 className="text-sm font-bold text-gray-800">Course Viewer</h1>
+                        <span className="hidden sm:inline bg-primary text-white text-xs font-bold px-2 py-1 rounded">COURSE</span>
+                        <h1 className="text-xs sm:text-sm font-bold text-gray-800 truncate max-w-[150px] sm:max-w-none">Course Viewer</h1>
                     </div>
                 </div>
+                <button
+                    onClick={() => setShowSidebar(!showSidebar)}
+                    className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Toggle syllabus"
+                >
+                    {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
             </header>
 
             {/* Main Layout */}
@@ -324,13 +332,13 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
 
 
                     {/* Tabs Navigation */}
-                    <div className="border-b border-gray-200">
-                        <div className="flex gap-8 px-6">
+                    <div className="border-b border-gray-200 overflow-x-auto">
+                        <div className="flex gap-4 sm:gap-8 px-4 sm:px-6 min-w-max">
                             {['notes', 'transcript', 'resources', 'discussion'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`py-4 text-sm font-semibold border-b-2 transition-colors capitalize ${activeTab === tab
+                                    className={`py-3 sm:py-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors capitalize whitespace-nowrap ${activeTab === tab
                                         ? "border-secondary-dark text-primary"
                                         : "border-transparent text-gray-500 hover:text-gray-800"
                                         }`}
@@ -342,7 +350,7 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
                     </div>
 
                     {/* Tab Content */}
-                    <div className="p-6 flex-1 bg-gray-50/50">
+                    <div className="p-4 sm:p-6 flex-1 bg-gray-50/50">
                         {activeTab === 'notes' && (
                             <div className="max-w-3xl">
                                 <h3 className="font-bold text-gray-800 mb-4">My Notes</h3>
@@ -389,116 +397,139 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
                     </div>
                 </div>
 
-                {/* Right Sidebar (Syllabus Tree) */}
-                <div className="w-96 bg-white border-l border-gray-200 flex flex-col shrink-0 z-10 shadow-xl shadow-gray-200/50">
-                    <div className="p-6 border-b border-gray-200 bg-gray-50/30">
-                        <h2 className="font-bold text-lg text-gray-900">Syllabus</h2>
-                    </div>
+                {/* Right Sidebar (Syllabus Tree) - Mobile overlay + Desktop fixed */}
+                <>
+                    {/* Mobile overlay backdrop */}
+                    {showSidebar && (
+                        <div
+                            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                            onClick={() => setShowSidebar(false)}
+                        />
+                    )}
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {modules.map((module) => (
-                            <div key={module.id} className="border-b border-gray-100 last:border-0">
-                                {/* Level 1: Module */}
-                                <button
-                                    onClick={() => toggleModule(module.id)}
-                                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group sticky top-0 bg-white z-10"
-                                >
-                                    <div className="text-left flex items-center gap-3">
-                                        <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                                            <Layers className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-800 text-sm group-hover:text-primary transition-colors">{module.title}</h3>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{module.units.length} UNITS</p>
-                                        </div>
-                                    </div>
-                                    {module.isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                                </button>
-
-                                {/* Level 2 & 3: Units & Contents */}
-                                {module.isOpen && (
-                                    <div className="bg-gray-50/50 pb-2">
-                                        {module.units.map((unit) => (
-                                            <div key={unit.id} className="pl-6 pr-4 py-2">
-                                                <div className="flex items-center gap-2 mb-2 px-2">
-                                                    <AlignLeft className="w-3 h-3 text-gray-400" />
-                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{unit.title}</span>
-                                                </div>
-
-                                                <div className="space-y-1 pl-3 border-l-2 border-gray-200 ml-1.5">
-                                                    {unit.contents.map((content) => (
-                                                        <div
-                                                            key={content.id}
-                                                            onClick={() => setCurrentContentId(content.id)}
-                                                            className={`px-3 py-2.5 rounded-lg flex items-start gap-3 cursor-pointer transition-all ${currentContentId === content.id
-                                                                ? "bg-white shadow-sm border border-gray-200"
-                                                                : "hover:bg-gray-100 hover:ml-1"
-                                                                }`}
-                                                        >
-                                                            <div className="mt-0.5 shrink-0">
-                                                                {content.completed ? (
-                                                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                                                                ) : (
-                                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${currentContentId === content.id ? "border-secondary" : "border-gray-300"}`}>
-                                                                        {currentContentId === content.id && <div className="w-1.5 h-1.5 bg-secondary rounded-full" />}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className={`text-xs font-medium truncate ${currentContentId === content.id ? "text-gray-900" : "text-gray-600"}`}>
-                                                                    {content.title}
-                                                                </p>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    {content.type === 'video' && <Play className="w-3 h-3 text-gray-400" />}
-                                                                    {content.type === 'quiz' && <FileText className="w-3 h-3 text-gray-400" />}
-                                                                    <span className="text-[10px] text-gray-400">{content.duration || '5m'}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Lesson Navigation Controls - Fixed at bottom */}
-                    <div className="border-t border-gray-200 bg-white p-4 space-y-3">
-                        <button
-                            onClick={() => currentContentId && handleContentComplete(currentContentId)}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            aria-label="Mark lesson as complete"
-                        >
-                            <CheckCircle className="w-5 h-5" />
-                            Mark as Complete
-                        </button>
-
-                        <div className="grid grid-cols-2 gap-2">
+                    {/* Sidebar */}
+                    <div className={`
+                        fixed lg:relative inset-y-0 right-0 z-50 lg:z-10
+                        w-80 sm:w-96 bg-white border-l border-gray-200 flex flex-col shrink-0 shadow-xl shadow-gray-200/50
+                        transform transition-transform duration-300 ease-in-out
+                        ${showSidebar ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+                    `}>
+                        <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50/30 flex items-center justify-between">
+                            <h2 className="font-bold text-base sm:text-lg text-gray-900">Syllabus</h2>
                             <button
-                                onClick={handlePreviousLesson}
-                                disabled={!hasPrevious}
-                                aria-label="Previous lesson"
-                                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                onClick={() => setShowSidebar(false)}
+                                className="lg:hidden p-1.5 hover:bg-gray-200 rounded-lg"
+                                aria-label="Close syllabus"
                             >
-                                <ChevronLeft className="w-4 h-4" />
-                                Previous
-                            </button>
-
-                            <button
-                                onClick={handleNextLesson}
-                                disabled={!hasNext}
-                                aria-label="Next lesson"
-                                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
-                            >
-                                Next
-                                <ChevronRight className="w-4 h-4" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            {modules.map((module) => (
+                                <div key={module.id} className="border-b border-gray-100 last:border-0">
+                                    {/* Level 1: Module */}
+                                    <button
+                                        onClick={() => toggleModule(module.id)}
+                                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group sticky top-0 bg-white z-10"
+                                    >
+                                        <div className="text-left flex items-center gap-3">
+                                            <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                                <Layers className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-800 text-sm group-hover:text-primary transition-colors">{module.title}</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{module.units.length} UNITS</p>
+                                            </div>
+                                        </div>
+                                        {module.isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                                    </button>
+
+                                    {/* Level 2 & 3: Units & Contents */}
+                                    {module.isOpen && (
+                                        <div className="bg-gray-50/50 pb-2">
+                                            {module.units.map((unit) => (
+                                                <div key={unit.id} className="pl-6 pr-4 py-2">
+                                                    <div className="flex items-center gap-2 mb-2 px-2">
+                                                        <AlignLeft className="w-3 h-3 text-gray-400" />
+                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{unit.title}</span>
+                                                    </div>
+
+                                                    <div className="space-y-1 pl-3 border-l-2 border-gray-200 ml-1.5">
+                                                        {unit.contents.map((content) => (
+                                                            <div
+                                                                key={content.id}
+                                                                onClick={() => setCurrentContentId(content.id)}
+                                                                className={`px-3 py-2.5 rounded-lg flex items-start gap-3 cursor-pointer transition-all ${currentContentId === content.id
+                                                                    ? "bg-white shadow-sm border border-gray-200"
+                                                                    : "hover:bg-gray-100 hover:ml-1"
+                                                                    }`}
+                                                            >
+                                                                <div className="mt-0.5 shrink-0">
+                                                                    {content.completed ? (
+                                                                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                                                    ) : (
+                                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${currentContentId === content.id ? "border-secondary" : "border-gray-300"}`}>
+                                                                            {currentContentId === content.id && <div className="w-1.5 h-1.5 bg-secondary rounded-full" />}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className={`text-xs font-medium truncate ${currentContentId === content.id ? "text-gray-900" : "text-gray-600"}`}>
+                                                                        {content.title}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        {content.type === 'video' && <Play className="w-3 h-3 text-gray-400" />}
+                                                                        {content.type === 'quiz' && <FileText className="w-3 h-3 text-gray-400" />}
+                                                                        <span className="text-[10px] text-gray-400">{content.duration || '5m'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Lesson Navigation Controls - Fixed at bottom */}
+                        <div className="border-t border-gray-200 bg-white p-4 space-y-3">
+                            <button
+                                onClick={() => currentContentId && handleContentComplete(currentContentId)}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                aria-label="Mark lesson as complete"
+                            >
+                                <CheckCircle className="w-5 h-5" />
+                                Mark as Complete
+                            </button>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={handlePreviousLesson}
+                                    disabled={!hasPrevious}
+                                    aria-label="Previous lesson"
+                                    className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                    Previous
+                                </button>
+
+                                <button
+                                    onClick={handleNextLesson}
+                                    disabled={!hasNext}
+                                    aria-label="Next lesson"
+                                    className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    Next
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </>
 
             </div>
         </div>

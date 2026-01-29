@@ -1,13 +1,14 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import { MessageSquare, ThumbsUp, Share2, MoreHorizontal, GraduationCap, Send, ShieldCheck, User } from "lucide-react";
+import { MessageSquare, ThumbsUp, Share2, MoreHorizontal, GraduationCap, Send, ShieldCheck, User, Pin, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export default function CommunityPage() {
     const [selectedFilter, setSelectedFilter] = useState("All Posts");
     const [isTutorSelected, setIsTutorSelected] = useState(false);
     const [postContent, setPostContent] = useState("");
+    const [isPosting, setIsPosting] = useState(false);
 
     // Initial mock posts
     const [posts, setPosts] = useState([
@@ -48,8 +49,13 @@ export default function CommunityPage() {
         }
     ]);
 
-    const handlePost = () => {
-        if (!postContent.trim()) return;
+    const handlePost = async () => {
+        if (!postContent.trim() || isPosting) return;
+
+        setIsPosting(true);
+
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const newPost = {
             id: Date.now(),
@@ -66,6 +72,7 @@ export default function CommunityPage() {
         setPosts([newPost, ...posts]);
         setPostContent("");
         setIsTutorSelected(false);
+        setIsPosting(false);
 
         // If we were filtering for something else, switch to All Posts to see the new post
         // OR switch to Tutor filter if we just sent a tutor message
@@ -90,8 +97,8 @@ export default function CommunityPage() {
         <div className="min-h-screen bg-surface-muted">
             <Navbar />
 
-            <main className="max-w-3xl mx-auto p-6 md:p-8">
-                <h1 className="text-3xl font-bold mb-8">Community Feed</h1>
+            <main className="max-w-3xl mx-auto p-4 sm:p-6 md:p-8">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Community Feed</h1>
 
                 {/* Create Post */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 transition-all focus-within:ring-2 focus-within:ring-secondary/20">
@@ -111,8 +118,8 @@ export default function CommunityPage() {
                                     <button
                                         onClick={() => setIsTutorSelected(!isTutorSelected)}
                                         className={`text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest transition-all flex items-center gap-1.5 border ${isTutorSelected
-                                                ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                                : "bg-gray-50 text-gray-400 border-gray-100 hover:border-gray-200"
+                                            ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                            : "bg-gray-50 text-gray-400 border-gray-100 hover:border-gray-200"
                                             }`}
                                     >
                                         <GraduationCap className={`w-3.5 h-3.5 ${isTutorSelected ? "text-indigo-600" : "text-gray-400"}`} />
@@ -122,11 +129,15 @@ export default function CommunityPage() {
                                 </div>
                                 <button
                                     onClick={handlePost}
-                                    disabled={!postContent.trim()}
-                                    className={`px-6 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${postContent.trim() ? "bg-primary text-white hover:bg-primary-light shadow-md" : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                    disabled={!postContent.trim() || isPosting}
+                                    className={`px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 min-w-[80px] justify-center ${postContent.trim() && !isPosting ? "bg-primary text-white hover:bg-primary-light shadow-md" : "bg-gray-100 text-gray-300 cursor-not-allowed"
                                         }`}
                                 >
-                                    <Send className="w-4 h-4" /> Post
+                                    {isPosting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <><Send className="w-4 h-4" /> <span className="hidden sm:inline">Post</span></>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -140,8 +151,8 @@ export default function CommunityPage() {
                             key={filter}
                             onClick={() => setSelectedFilter(filter)}
                             className={`px-5 py-2.5 text-xs font-bold rounded-full transition-all border whitespace-nowrap ${selectedFilter === filter
-                                    ? "bg-primary text-white border-primary shadow-md translate-y-[-1px]"
-                                    : "bg-white text-gray-500 border-gray-100 hover:border-gray-300"
+                                ? "bg-primary text-white border-primary shadow-md translate-y-[-1px]"
+                                : "bg-white text-gray-500 border-gray-100 hover:border-gray-300"
                                 }`}
                         >
                             {filter}
@@ -150,8 +161,8 @@ export default function CommunityPage() {
                     <button
                         onClick={() => setSelectedFilter("Tutor")}
                         className={`px-5 py-2.5 text-xs font-bold rounded-full transition-all border whitespace-nowrap flex items-center gap-2 ${selectedFilter === "Tutor"
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-md translate-y-[-1px]"
-                                : "bg-indigo-50 text-indigo-500 border-indigo-100 hover:bg-indigo-100"
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-md translate-y-[-1px]"
+                            : "bg-indigo-50 text-indigo-500 border-indigo-100 hover:bg-indigo-100"
                             }`}
                     >
                         <GraduationCap className="w-4 h-4" /> Tutor Questions
@@ -165,8 +176,8 @@ export default function CommunityPage() {
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${post.isTutor ? 'bg-indigo-600 text-white' :
-                                            post.role === 'Instructor' ? 'bg-primary text-white' :
-                                                'bg-gray-200 text-gray-600'
+                                        post.role === 'Instructor' ? 'bg-primary text-white' :
+                                            'bg-gray-200 text-gray-600'
                                         }`}>
                                         {post.avatar}
                                     </div>
@@ -179,7 +190,7 @@ export default function CommunityPage() {
                                                 </span>
                                             )}
                                             {post.role && <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">{post.role}</span>}
-                                            {post.isPinned && <span className="text-gray-400">📌</span>}
+                                            {post.isPinned && <Pin className="w-4 h-4 text-gray-400 rotate-45" />}
                                         </div>
                                         <p className="text-xs text-gray-500">{post.time} • {post.topic}</p>
                                     </div>

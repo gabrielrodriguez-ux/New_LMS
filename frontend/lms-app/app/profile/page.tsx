@@ -29,71 +29,71 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-surface-muted">
             <Navbar />
 
-            <main className="max-w-4xl mx-auto p-6 md:p-8">
-                <h1 className="text-3xl font-bold mb-8">My Profile</h1>
+            <main className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">My Profile</h1>
 
                 {/* NEW: Talent Wheel in Profile */}
-                <section className="mb-10">
+                <section className="mb-6 sm:mb-10">
                     <TalentWheel />
                 </section>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     {/* Sidebar - Avatar & Stats */}
-                    <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-                            <div className="relative w-32 h-32 mx-auto mb-4">
-                                <div className="w-full h-full bg-gradient-to-br from-secondary to-accent rounded-full flex items-center justify-center text-4xl font-bold text-primary">
+                    <div className="space-y-4 sm:space-y-6 order-2 md:order-1">
+                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
+                            <div className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-3 sm:mb-4">
+                                <div className="w-full h-full bg-gradient-to-br from-secondary to-accent rounded-full flex items-center justify-center text-3xl sm:text-4xl font-bold text-primary">
                                     GR
                                 </div>
-                                <button className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full hover:bg-primary-light transition-colors">
-                                    <Camera className="w-4 h-4" />
+                                <button className="absolute bottom-0 right-0 p-1.5 sm:p-2 bg-primary text-white rounded-full hover:bg-primary-light transition-colors">
+                                    <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                             </div>
-                            <h2 className="text-xl font-bold">{user.firstName} {user.lastName}</h2>
-                            <p className="text-gray-500">{user.role}</p>
+                            <h2 className="text-lg sm:text-xl font-bold">{user.firstName} {user.lastName}</h2>
+                            <p className="text-sm sm:text-base text-gray-500">{user.role}</p>
 
-                            <div className="mt-6 flex justify-center gap-2">
-                                <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full">Pro Member</span>
-                                <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full">Level 12</span>
+                            <div className="mt-4 sm:mt-6 flex justify-center gap-2 flex-wrap">
+                                <span className="px-2 sm:px-3 py-1 bg-blue-50 text-blue-700 text-[10px] sm:text-xs font-semibold rounded-full">Pro Member</span>
+                                <span className="px-2 sm:px-3 py-1 bg-green-50 text-green-700 text-[10px] sm:text-xs font-semibold rounded-full">Level 12</span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h3 className="font-bold mb-4">Statistics</h3>
-                            <div className="space-y-4">
+                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">Statistics</h3>
+                            <div className="space-y-3 sm:space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-gray-600">
-                                        <Award className="w-5 h-5 text-secondary-dark" />
-                                        <span>XP Earned</span>
+                                    <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
+                                        <Award className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-dark" />
+                                        <span className="text-sm sm:text-base">XP Earned</span>
                                     </div>
-                                    <span className="font-bold">4,250</span>
+                                    <span className="font-bold text-sm sm:text-base">4,250</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-gray-600">
-                                        <Clock className="w-5 h-5 text-secondary-dark" />
-                                        <span>Learning Time</span>
+                                    <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
+                                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-dark" />
+                                        <span className="text-sm sm:text-base">Learning Time</span>
                                     </div>
-                                    <span className="font-bold">48h 20m</span>
+                                    <span className="font-bold text-sm sm:text-base">48h 20m</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-gray-600">
-                                        <Shield className="w-5 h-5 text-secondary-dark" />
-                                        <span>Badges</span>
+                                    <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
+                                        <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-dark" />
+                                        <span className="text-sm sm:text-base">Badges</span>
                                     </div>
-                                    <span className="font-bold">12</span>
+                                    <span className="font-bold text-sm sm:text-base">12</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Main Form */}
-                    <div className="md:col-span-2">
-                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold">Personal Information</h3>
+                    <div className="md:col-span-2 order-1 md:order-2">
+                        <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+                                <h3 className="text-lg sm:text-xl font-bold">Personal Information</h3>
                                 <button
                                     onClick={() => isEditing ? (document.getElementById('profile-form') as HTMLFormElement)?.requestSubmit() : setIsEditing(true)}
-                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${isEditing
+                                    className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${isEditing
                                         ? "bg-secondary text-primary hover:bg-secondary-dark"
                                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                         }`}

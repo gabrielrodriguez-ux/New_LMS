@@ -11,27 +11,27 @@ export default function DashboardPage() {
             <Navbar />
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-10">
+            <main className="max-w-7xl mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 md:space-y-10">
 
                 {/* Welcome Section */}
-                <section className="space-y-4">
-                    <h1 className="text-3xl font-bold">Welcome back, Gabriel!</h1>
-                    <p className="text-gray-600">You're on a 5-day streak. Keep it up!</p>
+                <section className="space-y-2 sm:space-y-4">
+                    <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, Gabriel!</h1>
+                    <p className="text-sm sm:text-base text-gray-600">You're on a 5-day streak. Keep it up! 🔥</p>
                 </section>
 
                 {/* Continue Learning + Stats Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
 
                     {/* Active Course Card (Large) */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-6">
+                    <div className="lg:col-span-2 bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 sm:mb-6 gap-3">
                             <div>
-                                <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full uppercase tracking-wide">In Progress</span>
-                                <h2 className="text-2xl font-bold mt-3">ThePowerMBA - Business Strategy</h2>
-                                <p className="text-gray-500 mt-1">Module 4: Market Analysis</p>
+                                <span className="px-2 sm:px-3 py-1 bg-blue-50 text-blue-700 text-[10px] sm:text-xs font-semibold rounded-full uppercase tracking-wide">In Progress</span>
+                                <h2 className="text-xl sm:text-2xl font-bold mt-2 sm:mt-3">ThePowerMBA - Business Strategy</h2>
+                                <p className="text-sm sm:text-base text-gray-500 mt-1">Module 4: Market Analysis</p>
                             </div>
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                <PlayCircle className="w-8 h-8" />
+                            <div className="hidden sm:flex w-14 h-14 sm:w-16 sm:h-16 bg-blue-100 rounded-full items-center justify-center text-blue-600 shrink-0">
+                                <PlayCircle className="w-6 h-6 sm:w-8 sm:h-8" />
                             </div>
                         </div>
 
@@ -43,17 +43,17 @@ export default function DashboardPage() {
                             <div className="w-full bg-gray-100 rounded-full h-3">
                                 <div className="bg-gradient-to-r from-primary to-primary-light h-3 rounded-full" style={{ width: '65%' }}></div>
                             </div>
-                            <div className="pt-4 flex gap-4">
+                            <div className="pt-3 sm:pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
                                 <Link
                                     href="/dashboard/courses/eb15e6a0-3214-4ab4-95b4-2c832dec2639"
                                     aria-label="Continue learning Business Strategy course"
-                                    className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-light transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                                    className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-light transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary text-center text-sm sm:text-base"
                                 >
                                     Continue Learning
                                 </Link>
                                 <button
                                     aria-label="View course syllabus"
-                                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+                                    className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 text-sm sm:text-base"
                                 >
                                     View Syllabus
                                 </button>
@@ -115,34 +115,35 @@ export default function DashboardPage() {
 
                 {/* Recommended Courses */}
                 <section>
-                    <h2 className="text-xl font-bold mb-6">Recommended for you</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border border-gray-100">
-                                <div className="h-40 bg-gray-200 relative">
-                                    <div className="absolute inset-0 bg-gray-800/10 group-hover:bg-gray-800/0 transition-colors" />
-                                    {/* Placeholder for course image */}
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        <BookOpen className="w-8 h-8" />
-                                    </div>
+                    <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Recommended for you</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                        {[
+                            { id: 1, title: 'Digital Marketing Mastery 2026', category: 'Marketing', gradient: 'from-purple-500 to-pink-500' },
+                            { id: 2, title: 'Data Science Fundamentals', category: 'Technology', gradient: 'from-blue-500 to-cyan-500' },
+                            { id: 3, title: 'Leadership Excellence', category: 'Management', gradient: 'from-emerald-500 to-teal-500' },
+                            { id: 4, title: 'Financial Analysis Pro', category: 'Finance', gradient: 'from-orange-500 to-red-500' }
+                        ].map((course) => (
+                            <div key={course.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group border border-gray-100">
+                                <div className={`h-32 sm:h-40 bg-gradient-to-br ${course.gradient} relative flex items-center justify-center p-8`}>
+                                    <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-white/80 group-hover:scale-110 transition-transform" />
                                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold shadow-sm">
                                         4.8 ★
                                     </div>
                                 </div>
-                                <div className="p-4">
-                                    <div className="text-xs text-secondary-dark font-semibold uppercase tracking-wider mb-2">Marketing</div>
-                                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">Digital Marketing Mastery 2026</h3>
-                                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                                <div className="p-3 sm:p-4">
+                                    <div className="text-[10px] sm:text-xs text-secondary-dark font-semibold uppercase tracking-wider mb-1 sm:mb-2">{course.category}</div>
+                                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm sm:text-base leading-tight">{course.title}</h3>
+                                    <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
                                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 12h</span>
                                         <span className="flex items-center gap-1"><Users className="w-3 h-3" /> 1.2k</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium bg-gray-100 px-2 py-1 rounded">Intermediate</span>
+                                        <span className="text-[10px] sm:text-xs font-medium bg-gray-100 px-2 py-1 rounded">Intermediate</span>
                                         <button
                                             aria-label="Preview course"
-                                            className="text-primary hover:text-secondary-dark transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                                            className="text-primary hover:text-secondary-dark transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary rounded p-1"
                                         >
-                                            <PlayCircle className="w-6 h-6" />
+                                            <PlayCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                                         </button>
                                     </div>
                                 </div>

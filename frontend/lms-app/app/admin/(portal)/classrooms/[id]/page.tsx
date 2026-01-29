@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Layers, AlignLeft, FileText, Sparkles, Trash2, GripVertical, ChevronDown, ChevronRight, Video, FileQuestion, BookOpen, Edit, Save, Upload, CheckCircle2, BarChart3, Database } from 'lucide-react';
+import { ArrowLeft, Plus, Layers, AlignLeft, FileText, Sparkles, Trash2, GripVertical, ChevronDown, ChevronRight, Video, FileQuestion, BookOpen, Edit, Save, Upload, CheckCircle2, BarChart3, Database, History, Download, Clock, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/utils/api-client';
 import { useRouter } from 'next/navigation';
@@ -106,6 +106,53 @@ export default function CourseEditorPage({ params }: { params: { id: string } })
     const [contentType, setContentType] = useState("video"); // video, text, quiz
     const [isAiGenerated, setIsAiGenerated] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Version Control & Export
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [history, setHistory] = useState([
+        { version: 3, date: new Date().toISOString(), author: 'Gabriel R.', notes: 'Manual correction of Module 1' },
+        { version: 2, date: new Date(Date.now() - 86400000).toISOString(), author: 'System', notes: 'Bulk Import: initial_load.zip' },
+        { version: 1, date: new Date(Date.now() - 172800000).toISOString(), author: 'System', notes: 'Course Created' }
+    ]);
+
+    const handleExportExcel = async () => {
+        try {
+            const { exportCourseToExcel } = await import('@/utils/excel-exporter');
+            exportCourseToExcel(course, modules);
+        } catch (e) {
+            console.error("Export failed", e);
+            alert("Failed to export Excel");
+        }
+    };
+
+    const handleRestoreVersion = async (ver: any) => {
+        if (!confirm(`Are you sure you want to restore version v${ver.version}? Current unsaved changes will be lost.`)) return;
+
+        setIsSaving(true);
+        try {
+            // Simulate backend restoration process
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // In a real implementation: await apiClient.post('CATALOG', `/api/courses/${course.id}/restore`, { version: ver.version });
+
+            // Refresh data
+            fetchData();
+
+            // Add entry to history
+            setHistory(prev => [{
+                version: prev.length + 1,
+                date: new Date().toISOString(),
+                author: 'Gabriel R.',
+                notes: `Restored from v${ver.version}`
+            }, ...prev]);
+
+            setIsHistoryModalOpen(false);
+        } catch (e) {
+            console.error("Restore failed", e);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -369,6 +416,14 @@ export default function CourseEditorPage({ params }: { params: { id: string } })
 
             setImportResult(result);
             if (result.success) {
+                // Add to history
+                setHistory(prev => [{
+                    version: prev.length + 1,
+                    date: new Date().toISOString(),
+                    author: 'Gabriel R.',
+                    notes: `Bulk Import: ${file.name}`
+                }, ...prev]);
+
                 fetchData(); // Reload structure
             }
         } catch (error) {
@@ -421,6 +476,18 @@ export default function CourseEditorPage({ params }: { params: { id: string } })
                         className="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2"
                     >
                         <Upload className="w-4 h-4" /> Import Zip
+                    </button>
+                    <button
+                        onClick={() => setIsHistoryModalOpen(true)}
+                        className="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2"
+                    >
+                        <History className="w-4 h-4" /> History
+                    </button>
+                    <button
+                        onClick={handleExportExcel}
+                        className="px-4 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-emerald-100 transition-all shadow-sm flex items-center gap-2"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" /> Export Excel
                     </button>
                     <button
                         onClick={() => { setNewItemTitle(""); setIsModuleModalOpen(true); }}
@@ -799,6 +866,69 @@ export default function CourseEditorPage({ params }: { params: { id: string } })
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setIsContentModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancel</button>
                             <button onClick={handleCreateContent} className="px-6 py-2 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-700 shadow-lg shadow-slate-200">{isAiGenerated ? 'Create & Open Studio' : 'Create Content'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Version History Modal */}
+            {isHistoryModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-3xl p-8 w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-800">Syllabus Version History</h3>
+                                <p className="text-sm text-gray-500">Track changes and imports.</p>
+                            </div>
+                            <button onClick={() => setIsHistoryModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                <Trash2 className="w-5 h-5 text-gray-400 rotate-45" /> {/* Using Trash icon rotated as Close X for quickness or import X */}
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                            {history.map((ver) => (
+                                <div key={ver.version} className="flex gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition-all">
+                                    <div className="flex flex-col items-center gap-1 min-w-[60px]">
+                                        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">
+                                            v{ver.version}
+                                        </div>
+                                        <div className="h-full w-px bg-gray-200 my-1"></div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="font-bold text-gray-800">{ver.notes}</h4>
+                                            <span className="text-xs font-mono text-gray-400 bg-white px-2 py-1 rounded border border-gray-100">
+                                                {new Date(ver.date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mb-3">Changed by <span className="font-semibold text-gray-700">{ver.author}</span> • {new Date(ver.date).toLocaleTimeString()}</p>
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRestoreVersion(ver)}
+                                                className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:border-indigo-300 transition-colors"
+                                            >
+                                                Restore This Version
+                                            </button>
+                                            <button
+                                                onClick={handleExportExcel}
+                                                className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-800 hover:border-emerald-200 flex items-center gap-1"
+                                            >
+                                                <FileSpreadsheet className="w-3 h-3" /> Download Excel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end pt-6 border-t border-gray-100 mt-4">
+                            <button
+                                onClick={() => setIsHistoryModalOpen(false)}
+                                className="px-6 py-2 bg-slate-900 text-white text-sm font-bold rounded-xl"
+                            >
+                                Close History
+                            </button>
                         </div>
                     </div>
                 </div>

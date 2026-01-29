@@ -1,7 +1,8 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import { Trophy, Medal, Star, Shield, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Trophy, Medal, Star, Shield, TrendingUp, Zap, Target, Award, Flame, Crown, Rocket, Heart, BookOpen } from "lucide-react";
 
 export default function LeaderboardPage() {
     const leaderboard = [
@@ -18,19 +19,19 @@ export default function LeaderboardPage() {
         <div className="min-h-screen bg-surface-muted">
             <Navbar />
 
-            <main className="max-w-6xl mx-auto p-6 md:p-8">
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-3">
-                        <Trophy className="w-10 h-10 text-yellow-500" />
+            <main className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8">
+                <div className="text-center mb-6 sm:mb-10">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3">
+                        <Trophy className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-yellow-500" />
                         Global Leaderboard
                     </h1>
-                    <p className="text-gray-600">Compete with your peers and earn XP to climb the ranks!</p>
+                    <p className="text-sm sm:text-base text-gray-600">Compete with your peers and earn XP to climb the ranks!</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
 
                     {/* Main Leaderboard Table */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="lg:col-span-2 bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden order-2 lg:order-1">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <h2 className="font-bold text-lg">Weekly Ranking</h2>
                             <div className="flex gap-2 text-sm">
@@ -87,7 +88,7 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Sidebar Stats */}
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
                         {/* My Stats */}
                         <div className="bg-gradient-to-br from-primary to-primary-light text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
                             <div className="relative z-10">
@@ -104,33 +105,45 @@ export default function LeaderboardPage() {
                         </div>
 
                         {/* Badges */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold flex items-center gap-2">
-                                    <Medal className="w-5 h-5 text-secondary-dark" />
+                                <h3 className="font-bold flex items-center gap-2 text-sm sm:text-base">
+                                    <Medal className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-dark" />
                                     Recent Badges
                                 </h3>
-                                <a
-                                    href="#"
+                                <Link
+                                    href="/profile#badges"
                                     aria-label="View all badges"
                                     className="text-xs text-primary font-medium hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary rounded"
                                 >
                                     View All
-                                </a>
+                                </Link>
                             </div>
 
                             <div className="grid grid-cols-4 gap-2">
-                                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                                    <div key={i} className="aspect-square bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group cursor-pointer hover:border-secondary transition-colors relative">
-                                        {i <= 5 ? (
-                                            <Shield className={`w-6 h-6 ${i % 2 === 0 ? 'text-yellow-500' : 'text-blue-500'}`} />
-                                        ) : (
-                                            <Shield className="w-6 h-6 text-gray-300" />
-                                        )}
+                                {[
+                                    { icon: Flame, color: 'text-orange-500', unlocked: true },
+                                    { icon: Zap, color: 'text-yellow-500', unlocked: true },
+                                    { icon: Target, color: 'text-blue-500', unlocked: true },
+                                    { icon: Crown, color: 'text-purple-500', unlocked: true },
+                                    { icon: Rocket, color: 'text-emerald-500', unlocked: true },
+                                    { icon: Heart, color: 'text-gray-300', unlocked: false },
+                                    { icon: BookOpen, color: 'text-gray-300', unlocked: false },
+                                    { icon: Award, color: 'text-gray-300', unlocked: false },
+                                ].map((badge, i) => (
+                                    <div
+                                        key={i}
+                                        className={`aspect-square rounded-lg flex items-center justify-center border group cursor-pointer transition-all ${badge.unlocked
+                                                ? 'bg-gradient-to-br from-gray-50 to-white border-gray-200 hover:border-secondary hover:shadow-md hover:scale-105'
+                                                : 'bg-gray-50 border-gray-100 opacity-50'
+                                            }`}
+                                        title={badge.unlocked ? 'Badge unlocked!' : 'Locked'}
+                                    >
+                                        <badge.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${badge.color}`} />
                                     </div>
                                 ))}
                             </div>
-                            <p className="text-xs text-center text-gray-500 mt-4">12 / 30 Badges unlocked</p>
+                            <p className="text-[10px] sm:text-xs text-center text-gray-500 mt-3 sm:mt-4">12 / 30 Badges unlocked</p>
                         </div>
                     </div>
 
