@@ -12,17 +12,73 @@ import {
     ArrowUpRight,
     BarChart3
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function PortalClienteDashboard() {
-    const stats = [
+    const [features, setFeatures] = useState<any>({
+        fundae: true,
+        advancedExports: true,
+        hrisSync: true
+    });
+    const [loadingFeatures, setLoadingFeatures] = useState(true);
+
+    useEffect(() => {
+        const loadFeatures = async () => {
+            try {
+                const { data: authData } = await supabase.auth.getUser();
+                let flags: any = {};
+
+                if (authData?.user) {
+                    const { data } = await supabase
+                        .from('users')
+                        .select('*, tenants(feature_flags)')
+                        .eq('id', authData.user.id)
+                        .single();
+
+                    if (data?.tenants) {
+                        flags = (data.tenants as any).feature_flags || {};
+                    }
+                } else {
+                    // Fallback for demo/mocked user: Fetch "Acme Corp" directly
+                    // This handles the case where the user is browsing the "mock" portal without real auth
+                    const { data } = await supabase
+                        .from('tenants')
+                        .select('feature_flags')
+                        .eq('slug', 'acme') // Assuming 'acme' is the demo tenant slug
+                        .single();
+
+                    if (data?.feature_flags) {
+                        flags = data.feature_flags;
+                    }
+                }
+
+                setFeatures({
+                    fundae: flags.fundae !== false,
+                    advancedExports: flags.advancedExports !== false,
+                    hrisSync: flags.hrisSync !== false
+                });
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoadingFeatures(false);
+            }
+        };
+        loadFeatures();
+    }, []);
+
+    const allStats = [
         { label: "Active Students", value: "482", sub: "+12% this month", icon: Users, color: "bg-blue-50 text-blue-600" },
         { label: "Avg. Progression", value: "64%", sub: "+5% vs last week", icon: TrendingUp, color: "bg-emerald-50 text-emerald-600" },
         { label: "Hours Logged", value: "1,240h", sub: "12.5h / student", icon: Clock, color: "bg-purple-50 text-purple-600" },
         { label: "Completion Rate", value: "89%", sub: "Top 5% in industry", icon: UserCheck, color: "bg-amber-50 text-amber-600" },
     ];
 
+    // Filter stats: Show all if advancedExports is true, otherwise only "Active Students" (Core)
+    const visibleStats = features.advancedExports ? allStats : allStats.slice(0, 1);
+
     const alerts = [
-        { title: "FUNDAE Compliance", message: "3 students are under the 75% attendance threshold for the current period.", priority: "high" },
+        ...(features.fundae ? [{ title: "FUNDAE Compliance", message: "3 students are under the 75% attendance threshold for the current period.", priority: "high" }] : []),
         { title: "New Course Available", message: "'Generative AI for Marketing' has been added to your catalog.", priority: "info" }
     ];
 
@@ -30,7 +86,7 @@ export default function PortalClienteDashboard() {
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
+                {visibleStats.map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p-3 rounded-2xl ${stat.icon}`}>
@@ -94,53 +150,60 @@ export default function PortalClienteDashboard() {
                 {/* Critical Alerts & Quick Actions */}
                 <div className="space-y-8">
                     {/* Alerts Section */}
-                    <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 text-[#a1e6c5] mb-6">
-                                <AlertCircle className="w-5 h-5" />
-                                <span className="text-xs font-bold uppercase tracking-widest">Action Required</span>
+                    {alerts.length > 0 && (
+                        <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 text-[#a1e6c5] mb-6">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">Action Required</span>
+                                </div>
+                                <div className="space-y-6">
+                                    {alerts.map((alert, i) => (
+                                        <div key={i} className="space-y-1">
+                                            <h5 className="font-bold text-sm leading-tight">{alert.title}</h5>
+                                            <p className="text-xs text-slate-400 leading-relaxed">{alert.message}</p>
+                                            <button
+                                                aria-label="Resolve alert"
+                                                className="text-[10px] font-bold text-[#a1e6c5] mt-2 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#a1e6c5] rounded"
+                                            >
+                                                Resolve Now <ChevronRight className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="space-y-6">
-                                {alerts.map((alert, i) => (
-                                    <div key={i} className="space-y-1">
-                                        <h5 className="font-bold text-sm leading-tight">{alert.title}</h5>
-                                        <p className="text-xs text-slate-400 leading-relaxed">{alert.message}</p>
-                                        <button
-                                            aria-label="Resolve alert"
-                                            className="text-[10px] font-bold text-[#a1e6c5] mt-2 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#a1e6c5] rounded"
-                                        >
-                                            Resolve Now <ChevronRight className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                            {/* Abstract Background Element */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
                         </div>
-                        {/* Abstract Background Element */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                    </div>
+                    )}
 
                     {/* Quick Action Cards */}
                     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-6">
                         <h4 className="font-bold text-slate-900 text-sm uppercase tracking-widest">Quick Actions</h4>
                         <div className="grid grid-cols-2 gap-4">
-                            <button
-                                aria-label="Assign seats to students"
-                                className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300"
-                            >
-                                <div className="bg-white p-2 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
-                                    <Users className="w-5 h-5 text-slate-600" />
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-600">Assign Seats</span>
-                            </button>
-                            <button
-                                aria-label="Export report as PDF"
-                                className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300"
-                            >
-                                <div className="bg-white p-2 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
-                                    <BarChart3 className="w-5 h-5 text-slate-600" />
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-600">Export PDF</span>
-                            </button>
+                            {!features.hrisSync && (
+                                <button
+                                    aria-label="Assign seats to students"
+                                    className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300"
+                                >
+                                    <div className="bg-white p-2 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                                        <Users className="w-5 h-5 text-slate-600" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-600">Assign Seats</span>
+                                </button>
+                            )}
+
+                            {features.advancedExports && (
+                                <button
+                                    aria-label="Export report as PDF"
+                                    className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300"
+                                >
+                                    <div className="bg-white p-2 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                                        <BarChart3 className="w-5 h-5 text-slate-600" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-600">Export PDF</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

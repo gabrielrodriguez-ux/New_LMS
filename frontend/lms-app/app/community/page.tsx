@@ -52,6 +52,9 @@ export default function CommunityPage() {
     const handlePost = async () => {
         if (!postContent.trim() || isPosting) return;
 
+        // Capture the current selection state before async operation
+        const isTutorMessage = isTutorSelected;
+
         setIsPosting(true);
 
         // Simulate API call
@@ -63,20 +66,19 @@ export default function CommunityPage() {
             avatar: "GR",
             time: "Just now",
             content: postContent,
-            topic: isTutorSelected ? "Tutor Assistance" : "General",
+            topic: isTutorMessage ? "Tutor Assistance" : "General",
             likes: 0,
             comments: 0,
-            isTutor: isTutorSelected
+            isTutor: isTutorMessage
         };
 
-        setPosts([newPost, ...posts]);
+        setPosts(prev => [newPost, ...prev]);
         setPostContent("");
         setIsTutorSelected(false);
         setIsPosting(false);
 
-        // If we were filtering for something else, switch to All Posts to see the new post
-        // OR switch to Tutor filter if we just sent a tutor message
-        if (isTutorSelected) {
+        // Switch filter based on the captured message type
+        if (isTutorMessage) {
             setSelectedFilter("Tutor");
         } else {
             setSelectedFilter("All Posts");
@@ -86,7 +88,7 @@ export default function CommunityPage() {
     // Filtering logic
     const filteredPosts = posts.filter(post => {
         if (selectedFilter === "All Posts") return true;
-        if (selectedFilter === "Tutor") return post.isTutor === true;
+        if (selectedFilter === "Tutor") return !!post.isTutor;
         if (selectedFilter === "Announcements") return post.topic === "Announcements";
         if (selectedFilter === "Q&A") return post.topic === "Q&A" || post.isTutor;
         // Basic match for other topics

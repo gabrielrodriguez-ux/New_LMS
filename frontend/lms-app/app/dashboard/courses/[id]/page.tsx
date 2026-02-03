@@ -332,18 +332,21 @@ export default function CoursePlayerPage({ params }: { params: { id: string } })
 
 
                     {/* Tabs Navigation */}
-                    <div className="border-b border-gray-200 overflow-x-auto">
-                        <div className="flex gap-4 sm:gap-8 px-4 sm:px-6 min-w-max">
+                    <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
+                        <div className="flex overflow-x-auto hide-scrollbar">
                             {['notes', 'transcript', 'resources', 'discussion'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`py-3 sm:py-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors capitalize whitespace-nowrap ${activeTab === tab
-                                        ? "border-secondary-dark text-primary"
-                                        : "border-transparent text-gray-500 hover:text-gray-800"
-                                        }`}
+                                    className={`
+                                        flex-1 px-6 py-4 text-sm font-bold text-center border-b-2 transition-all whitespace-nowrap
+                                        ${activeTab === tab
+                                            ? "border-primary text-primary bg-primary/5"
+                                            : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                                        }
+                                    `}
                                 >
-                                    {tab}
+                                    <span className="capitalize">{tab}</span>
                                 </button>
                             ))}
                         </div>

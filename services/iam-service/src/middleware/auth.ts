@@ -10,7 +10,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         // Fallback for development if no token is provided
         if (process.env.NODE_ENV !== 'production') {
             c.set('userId', '00000000-0000-0000-0000-000000000000')
-            c.set('tenantId' as any, '60f95b5e-2b01-4752-a99f-25e3abe994f3') // Matches ThePowerMBA client_id from DB
+            // c.set('tenantId' as any, '690486dd-189c-4332-92a7-ec4897e04127') // Removed to allow SuperAdmin (All Tenants) view by default
             c.set('roles', [])
             return await next()
         }

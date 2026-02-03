@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Plus, Building2, CreditCard, Users, ChevronRight, MoreVertical, X, Save, BookOpen } from "lucide-react";
+import { Search, Plus, Building2, CreditCard, Users, ChevronRight, MoreVertical, X, Save, BookOpen, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -12,6 +12,19 @@ export default function AdminClientsPage() {
     const [selectedSub, setSelectedSub] = useState<any | null>(null);
     const [seatIncrement, setSeatIncrement] = useState(10);
     const [isUpdatingSeats, setIsUpdatingSeats] = useState(false);
+
+    // Feature Configuration State
+    const [featureModalOpen, setFeatureModalOpen] = useState(false);
+    const [selectedClientForFeatures, setSelectedClientForFeatures] = useState<any | null>(null);
+    const [currentFeatures, setCurrentFeatures] = useState({
+        leaderboard: false,
+        challenges: false,
+        hrisSync: false,
+        fundae: false,
+        advancedExports: false,
+        ltiIntegration: false,
+        xapiTracking: false
+    });
 
     // Form State
     const [newClient, setNewClient] = useState({
@@ -25,6 +38,60 @@ export default function AdminClientsPage() {
     useEffect(() => {
         fetchClients();
     }, []);
+
+    const openFeatureModal = async (client: any) => {
+        setSelectedClientForFeatures(client);
+        setLoading(true);
+        try {
+            // Fetch from TENANTS table
+            const { data, error } = await supabase
+                .from('tenants')
+                .select('feature_flags')
+                .eq('id', client.id)
+                .single();
+
+            if (data?.feature_flags && Object.keys(data.feature_flags).length > 0) {
+                // If we have saved flags, use them. 
+                // Merge with defaults in case new flags were added implies we might want true for new ones? 
+                // For now just use saved.
+                setCurrentFeatures({ ...currentFeatures, ...data.feature_flags });
+            } else {
+                // Default to TRUE (All enabled) for new/unconfigured clients
+                setCurrentFeatures({
+                    hrisSync: true,
+                    fundae: true,
+                    advancedExports: true,
+                    ltiIntegration: true,
+                    xapiTracking: true,
+                    leaderboard: true, // Keep these true internally even if hidden
+                    challenges: true
+                });
+            }
+            setFeatureModalOpen(true);
+        } catch (e) {
+            console.error("Error fetching features", e);
+            alert("Could not load feature configuration. Is the tenant synced?");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveFeatures = async () => {
+        if (!selectedClientForFeatures) return;
+        try {
+            const { error } = await supabase
+                .from('tenants')
+                .update({ feature_flags: currentFeatures })
+                .eq('id', selectedClientForFeatures.id);
+
+            if (error) throw error;
+            setFeatureModalOpen(false);
+            alert("Features updated successfully!");
+        } catch (e) {
+            console.error("Error saving features", e);
+            alert("Failed to save feature configuration.");
+        }
+    };
 
     const fetchClients = async () => {
         setLoading(true);
@@ -164,9 +231,17 @@ export default function AdminClientsPage() {
                             {/* Expanded Details */}
                             {expandedClient === client.id && (
                                 <div className="border-t border-gray-100 bg-gray-50/50 p-6 space-y-6 animate-in slide-in-from-top-2 duration-300">
-                                    <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2 uppercase tracking-widest">
-                                        <CreditCard className="w-4 h-4 text-primary" /> Active Contracts
-                                    </h4>
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2 uppercase tracking-widest">
+                                            <CreditCard className="w-4 h-4 text-primary" /> Active Contracts
+                                        </h4>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openFeatureModal(client); }}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-primary hover:border-primary/30 transition-all shadow-sm"
+                                        >
+                                            <Settings className="w-3.5 h-3.5" /> Configure Features
+                                        </button>
+                                    </div>
 
                                     {client.subscriptions && client.subscriptions.length > 0 ? (
                                         <div className="grid gap-4 md:grid-cols-2">
@@ -318,6 +393,61 @@ export default function AdminClientsPage() {
                             >
                                 Export Usage Report
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Feature Config Modal */}
+            {featureModalOpen && selectedClientForFeatures && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h2 className="font-black text-xl text-slate-900 tracking-tight">Feature Configuration</h2>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">{selectedClientForFeatures.name}</p>
+                            </div>
+                            <button onClick={() => setFeatureModalOpen(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 gap-4">
+                                {[
+                                    { key: 'hrisSync', label: 'HRIS Auto-Sync', desc: 'Automatically sync user data from HR systems.' },
+                                    { key: 'fundae', label: 'FUNDAE Reporting', desc: 'Enable compliant formatting for FUNDAE exports.' },
+                                    { key: 'advancedExports', label: 'Advanced Analytics', desc: 'Access to raw data exports and BI tools.' },
+                                    { key: 'ltiIntegration', label: 'LTI 1.3 Provider', desc: 'Allow this tenant to launch content via LTI.' },
+                                    { key: 'xapiTracking', label: 'xAPI Statements', desc: 'Emit xAPI statements for external LRS.' }
+                                ].map((feature) => (
+                                    <div key={feature.key} className="flex justify-between items-center p-3 hover:bg-slate-50 rounded-xl transition-colors">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-700">{feature.label}</p>
+                                            <p className="text-xs text-gray-400 font-medium">{feature.desc}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentFeatures({ ...currentFeatures, [feature.key]: !currentFeatures[feature.key as keyof typeof currentFeatures] })}
+                                            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 cursor-pointer ${currentFeatures[feature.key as keyof typeof currentFeatures] ? 'bg-primary' : 'bg-slate-200'}`}
+                                        >
+                                            <div
+                                                className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ${currentFeatures[feature.key as keyof typeof currentFeatures] ? 'translate-x-5' : ''}`}
+                                            ></div>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pt-4 border-t border-gray-100 flex gap-3">
+                                <button
+                                    onClick={() => setFeatureModalOpen(false)}
+                                    className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-all text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={saveFeatures}
+                                    className="flex-1 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 text-sm flex items-center justify-center gap-2"
+                                >
+                                    <Save className="w-4 h-4" /> Save Configuration
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
