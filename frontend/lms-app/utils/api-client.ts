@@ -38,11 +38,14 @@ export const apiClient = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            if (!response.ok) throw new Error('API call failed');
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`API call failed: ${response.status} ${errText}`);
+            }
             return await response.json();
         } catch (error) {
             console.error(`Error in ${service} service:`, error);
-            return null;
+            throw error;
         }
     },
 
@@ -53,11 +56,14 @@ export const apiClient = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
-            if (!response.ok) throw new Error('API call failed');
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`API call failed: ${response.status} ${errText}`);
+            }
             return await response.json();
         } catch (error) {
             console.error(`Error in ${service} service:`, error);
-            return null;
+            throw error;
         }
     },
 
@@ -66,11 +72,14 @@ export const apiClient = {
             const response = await fetch(`${SERVICES[service]}${path}`, {
                 method: 'DELETE',
             });
-            if (!response.ok) throw new Error('API call failed');
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`API call failed: ${response.status} ${errText}`);
+            }
             return await response.json();
         } catch (error) {
             console.error(`Error in ${service} service:`, error);
-            return null;
+            throw error;
         }
     }
 };

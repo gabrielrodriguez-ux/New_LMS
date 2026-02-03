@@ -3,8 +3,57 @@
 import Navbar from "@/components/Navbar";
 import { Trophy, PlayCircle, BookOpen, Clock, Star, Users } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function DashboardPage() {
+    const [features, setFeatures] = useState<any>({
+        leaderboard: true, // Default to true for better UX if loading fails/latency, or false? 
+        // Let's default false to avoid showing if disabled.
+        leaderboard: false,
+        challenges: false
+    });
+    const [loadingFeatures, setLoadingFeatures] = useState(true);
+
+    useEffect(() => {
+        const loadFeatures = async () => {
+            try {
+                // 1. Get Auth User
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                // 2. Get User Profile with Tenant Features
+                // We assume public.users table links to public.tenants via client_id -> id
+                // Note: My sync script put clients into tenants. users.client_id should point to tenants.id
+                const { data, error } = await supabase
+                    .from('users')
+                    .select(`
+                        id,
+                        tenants (
+                            feature_flags
+                        )
+                    `)
+                    .eq('id', user.id)
+                    .single();
+
+                if (data?.tenants) {
+                    const flags = (data.tenants as any).feature_flags || {};
+                    setFeatures({
+                        leaderboard: flags.leaderboard !== false, // Default true if undefined? Or strict?
+                        // Strict:
+                        leaderboard: !!flags.leaderboard,
+                        challenges: !!flags.challenges
+                    });
+                }
+            } catch (e) {
+                console.error("Error loading features", e);
+            } finally {
+                setLoadingFeatures(false);
+            }
+        };
+        loadFeatures();
+    }, []);
+
     return (
         <div className="min-h-screen bg-surface-muted">
 
@@ -62,55 +111,63 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Gamification Stats */}
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <h3 className="font-bold flex items-center gap-2 mb-4">
-                                <Trophy className="w-5 h-5 text-yellow-500" />
-                                Ranking Semanal
-                            </h3>
-                            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-100 mb-2">
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-yellow-700 text-lg">#3</span>
-                                    <div className="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center text-yellow-700 text-xs font-bold">GR</div>
-                                    <span className="font-medium text-sm">Gabriel R.</span>
-                                </div>
-                                <span className="font-bold text-sm">450 XP</span>
-                            </div>
-                            <div className="space-y-2 mt-4 text-sm">
-                                <div className="flex justify-between items-center text-gray-500">
-                                    <span>1. Sarah J.</span>
-                                    <span>520 XP</span>
-                                </div>
-                                <div className="flex justify-between items-center text-gray-500">
-                                    <span>2. Mike T.</span>
-                                    <span>480 XP</span>
-                                </div>
-                                <div className="border-t pt-2 mt-2 text-center">
-                                    <Link
-                                        href="/leaderboard"
-                                        className="text-primary font-medium hover:underline text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary rounded"
-                                        aria-label="View full leaderboard rankings"
-                                    >
-                                        View Full Leaderboard
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Only show if features are enabled */}
+                    {!loadingFeatures && (features.leaderboard || features.challenges) && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
 
-                        <div className="bg-gradient-to-br from-secondary to-accent p-6 rounded-2xl text-primary relative overflow-hidden">
-                            <div className="relative z-10">
-                                <h3 className="font-bold mb-1">Daily Challenge</h3>
-                                <p className="text-sm opacity-90 mb-4">Complete 1 Quiz today</p>
-                                <div className="flex items-center gap-2 text-2xl font-bold">
-                                    0 / 1 <span className="text-sm font-normal opacity-75 self-end mb-1">completed</span>
+                            {features.leaderboard && (
+                                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                                    <h3 className="font-bold flex items-center gap-2 mb-4">
+                                        <Trophy className="w-5 h-5 text-yellow-500" />
+                                        Ranking Semanal
+                                    </h3>
+                                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-100 mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-bold text-yellow-700 text-lg">#3</span>
+                                            <div className="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center text-yellow-700 text-xs font-bold">GR</div>
+                                            <span className="font-medium text-sm">Gabriel R.</span>
+                                        </div>
+                                        <span className="font-bold text-sm">450 XP</span>
+                                    </div>
+                                    <div className="space-y-2 mt-4 text-sm">
+                                        <div className="flex justify-between items-center text-gray-500">
+                                            <span>1. Sarah J.</span>
+                                            <span>520 XP</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-gray-500">
+                                            <span>2. Mike T.</span>
+                                            <span>480 XP</span>
+                                        </div>
+                                        <div className="border-t pt-2 mt-2 text-center">
+                                            <Link
+                                                href="/leaderboard"
+                                                className="text-primary font-medium hover:underline text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                                                aria-label="View full leaderboard rankings"
+                                            >
+                                                View Full Leaderboard
+                                            </Link>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="w-full bg-white/30 h-1.5 rounded-full mt-2">
-                                    <div className="bg-primary w-0 h-1.5 rounded-full"></div>
+                            )}
+
+                            {features.challenges && (
+                                <div className="bg-gradient-to-br from-secondary to-accent p-6 rounded-2xl text-primary relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold mb-1">Daily Challenge</h3>
+                                        <p className="text-sm opacity-90 mb-4">Complete 1 Quiz today</p>
+                                        <div className="flex items-center gap-2 text-2xl font-bold">
+                                            0 / 1 <span className="text-sm font-normal opacity-75 self-end mb-1">completed</span>
+                                        </div>
+                                        <div className="w-full bg-white/30 h-1.5 rounded-full mt-2">
+                                            <div className="bg-primary w-0 h-1.5 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                    <Star className="absolute -bottom-4 -right-4 w-24 h-24 text-white opacity-20 rotate-12" />
                                 </div>
-                            </div>
-                            <Star className="absolute -bottom-4 -right-4 w-24 h-24 text-white opacity-20 rotate-12" />
+                            )}
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Recommended Courses */}

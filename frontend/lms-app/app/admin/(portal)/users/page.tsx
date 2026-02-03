@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
     // Edit/Delete State
     const [editingUser, setEditingUser] = useState<any | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editForm, setEditForm] = useState({ firstName: '', lastName: '', role: '', department: '', status: '' });
+    const [editForm, setEditForm] = useState({ firstName: '', lastName: '', role: '', department: '', status: '', client_id: '' });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -134,7 +134,8 @@ export default function AdminUsersPage() {
             lastName: user.lastName || user.last_name,
             role: user.role,
             department: user.department || user.job_title,
-            status: user.status || 'active'
+            status: user.status || 'active',
+            client_id: user.client_id || (user.clients ? user.clients.id : '') // Handle client_id
         });
         setIsEditModalOpen(true);
     };
@@ -680,6 +681,26 @@ export default function AdminUsersPage() {
                                             <option value="teacher">Tutor / Teacher</option>
                                             <option value="inspector">Inspector (Fundae)</option>
                                             <option value="admin">Super Admin</option>
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <div className="w-2 h-2 border-r-2 border-b-2 border-slate-400 rotate-45 mb-1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Organization Field for Edit */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Organization</label>
+                                    <div className="relative">
+                                        <select
+                                            value={editForm.client_id}
+                                            onChange={e => setEditForm({ ...editForm, client_id: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer appearance-none"
+                                        >
+                                            <option value="">No Organization</option>
+                                            {clients.map(client => (
+                                                <option key={client.id} value={client.id}>{client.name}</option>
+                                            ))}
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                             <div className="w-2 h-2 border-r-2 border-b-2 border-slate-400 rotate-45 mb-1"></div>

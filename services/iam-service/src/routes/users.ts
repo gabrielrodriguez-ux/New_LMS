@@ -73,6 +73,28 @@ userRoutes.post('/', zValidator('json', createUserSchema), async (c) => {
     return c.json(data, 201)
 })
 
+// GET /api/users/debug-test
+userRoutes.get('/debug-test', async (c) => {
+    const sbUrl = process.env.SUPABASE_URL || ''
+    const sbKey = process.env.SUPABASE_ANON_KEY || ''
+    const supabase = createClient(sbUrl, sbKey)
+
+    const { data, error } = await supabase.from('users').select('*').limit(5)
+
+    // Explicitly check count too
+    const { count } = await supabase.from('users').select('*', { count: 'exact', head: true })
+
+    return c.json({
+        message: "Debug Probe",
+        sbUrl,
+        sbKeyLen: sbKey?.length,
+        userCount: data?.length,
+        totalCount: count,
+        firstUser: data?.[0],
+        error
+    })
+})
+
 // GET /api/users
 userRoutes.get('/', async (c) => {
     const tenantId = c.get('tenantId') as string
@@ -84,10 +106,32 @@ userRoutes.get('/', async (c) => {
     const supabase = createClient(sbUrl, sbKey)
 
     // Using Supabase REST API instead of Prisma due to local DNS/Postgres connection issues
-    let query = supabase
-        .from('users')
-        .select('*')
-        .eq('client_id', tenantId)
+    console.log(`[GET /api/users] Context TenantId: ${tenantId}`);
+    console.log(`[GET /api/users] SB Key Len: ${sbKey?.length}, URL: ${sbUrl}`);
+    let query = supabase.from('users').select('*');
+
+    let filterMode = "none";
+    let tenantIdStr = tenantId;
+
+    // Filter by context tenant if present and valid UUID (ignoring empty strings)
+    // Checking length > 10 is a quick heuristic to avoid empty strings
+    if (tenantId && tenantId.length > 10) {
+        console.log(`[GET /api/users] Filtering by Context TenantId: ${tenantId}`);
+        query = query.eq('client_id', tenantId);
+        filterMode = "context-tenant";
+    }
+    // Otherwise check for query param (for SuperAdmin viewing specific tenant)
+    else {
+        const queryClientId = c.req.query('client_id');
+        if (queryClientId && queryClientId.length > 10) {
+            console.log(`[GET /api/users] Filtering by Query ClientId: ${queryClientId}`);
+            query = query.eq('client_id', queryClientId);
+            filterMode = "query-client-id";
+        } else {
+            console.log(`[GET /api/users] No Tenant Filter applied. Returning all.`);
+            filterMode = "all";
+        }
+    }
 
     // Order by created_at desc
     query = query.order('created_at', { ascending: false })
@@ -99,10 +143,26 @@ userRoutes.get('/', async (c) => {
         return c.json({ error: error.message }, 500)
     }
 
+    console.log(`[GET /api/users] Found ${users?.length || 0} users`);
+    if (users && users.length === 0) {
+        console.log("RLS Check: Empty result from public.users");
+        const { count } = await supabase.from('users').select('*', { count: 'exact', head: true });
+        console.log(`[GET /api/users] Total users in table (unfiltered): ${count}`);
+    } else if (users) {
+        // console.log("First User:", JSON.stringify(users[0]));
+    }
+
     // Manual filtering since we aren't using complex DB queries
     let filteredUsers = users || []
 
     return c.json({
+        debug: {
+            // Return debug info to help trace empty results
+            tenantIdContext: tenantId,
+            filterMode,
+            rawCount: users?.length || 0,
+            sbKeyLen: sbKey?.length
+        },
         data: filteredUsers.map((u: any) => ({
             id: u.id,
             email: `${(u.first_name || 'user').toLowerCase()}.${(u.last_name || 'demo').toLowerCase()}@demo.com`,
@@ -177,6 +237,7 @@ userRoutes.put('/:id', zValidator('json', updateUserSchema), async (c) => {
     if (body.lastName) updateData.last_name = body.lastName
     if (body.department) updateData.job_title = body.department // mapping department to job_title for now
     if (body.status) updateData.status = body.status
+    if (body.client_id) updateData.client_id = body.client_id
 
     const { data, error } = await supabase
         .from('users')
