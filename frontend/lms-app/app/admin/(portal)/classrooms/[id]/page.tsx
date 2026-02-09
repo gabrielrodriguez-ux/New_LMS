@@ -13,6 +13,12 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    useDroppable,
+    DragOverEvent,
+    DragStartEvent,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
+    DropAnimation,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -74,6 +80,55 @@ function SortableContentItem({ content, onDelete, onEdit }: any) {
                 >
                     <Trash2 className="w-3 h-3" />
                 </button>
+            </div>
+        </div>
+    );
+}
+
+function DroppableUnit({ unit, mIdx, uIdx, openContentModal, handleDeleteContent, handleEditContent }: any) {
+    const { setNodeRef } = useDroppable({
+        id: unit.id,
+        data: {
+            type: 'Unit',
+            unit,
+        },
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className="bg-white border border-gray-200 rounded-2xl p-4 ml-6 relative transition-colors hover:border-indigo-300"
+        >
+            <div className="absolute -left-6 top-8 w-6 h-px bg-gray-200"></div>
+            <div className="absolute -left-6 top-[-10px] bottom-8 w-px bg-gray-200"></div>
+
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <AlignLeft className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">UNIT {mIdx + 1}.{uIdx + 1}</span>
+                    <h4 className="font-bold text-gray-700">{unit.title}</h4>
+                </div>
+                <button onClick={() => openContentModal(unit.id)} className="p-1 px-3 bg-gray-100 rounded-lg text-[10px] font-bold text-gray-600 hover:bg-gray-200 transition-colors uppercase tracking-widest flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Content
+                </button>
+            </div>
+
+            <div className="space-y-1 pl-4 border-l-2 border-gray-100 ml-2 min-h-[40px]">
+                <SortableContext items={unit.contents?.map((c: any) => c.id) || []} strategy={verticalListSortingStrategy}>
+                    {unit.contents?.map((content: any) => (
+                        <SortableContentItem
+                            key={content.id}
+                            content={content}
+                            onDelete={handleDeleteContent}
+                            onEdit={handleEditContent}
+                        />
+                    ))}
+                    {(!unit.contents || unit.contents.length === 0) && (
+                        <div className="text-xs text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                            Drop content here
+                        </div>
+                    )}
+                </SortableContext>
             </div>
         </div>
     );
@@ -214,60 +269,113 @@ export default function CourseEditorPage({ params }: { params: { id: string } })
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+        if (!over) return;
 
         const activeId = active.id.toString();
         const overId = over.id.toString();
 
-        let activeContent: any = null;
-        let activeUnitId: string = "";
-        let overUnitId: string = "";
+        // Find source module and unit
+        let sourceModule: any;
+        let sourceUnit: any;
+        let activeItem: any;
 
-        modules.forEach(m => m.units?.forEach((u: any) => {
-            const foundActive = u.contents?.find((c: any) => c.id === activeId);
-            if (foundActive) {
-                activeContent = foundActive;
-                activeUnitId = u.id;
+        for (const mod of modules) {
+            for (const unit of mod.units || []) {
+                const item = unit.contents?.find((c: any) => c.id === activeId);
+                if (item) {
+                    sourceModule = mod;
+                    sourceUnit = unit;
+                    activeItem = item;
+                    break;
+                }
             }
-            const foundOver = u.contents?.find((c: any) => c.id === overId);
-            if (foundOver) overUnitId = u.id;
-        }));
+            if (activeItem) break;
+        }
 
-        if (!activeContent) return;
-        if (!overUnitId) overUnitId = activeUnitId; // Reorder within same unit if simple reorder
+        if (!sourceUnit || !activeItem) return;
 
+        // Find target unit
+        let targetUnit: any;
+
+        // Case 1: Dropped over another item
+        for (const mod of modules) {
+            for (const unit of mod.units || []) {
+                if (unit.contents?.some((c: any) => c.id === overId)) {
+                    targetUnit = unit;
+                    break;
+                }
+                // Case 2: Dropped over a unit directly (empty or not)
+                if (unit.id === overId) {
+                    targetUnit = unit;
+                    break;
+                }
+            }
+            if (targetUnit) break;
+        }
+
+        if (!targetUnit) return;
+
+        // Clone modules logic
         const newModules = JSON.parse(JSON.stringify(modules));
+        const sourceUnitClone = newModules.flatMap((m: any) => m.units).find((u: any) => u.id === sourceUnit.id);
+        const targetUnitClone = newModules.flatMap((m: any) => m.units).find((u: any) => u.id === targetUnit.id);
 
-        // Remove from old
-        newModules.forEach((m: any) => m.units?.forEach((u: any) => {
-            if (u.id === activeUnitId) u.contents = u.contents.filter((c: any) => c.id !== activeId);
-        }));
+        if (sourceUnit.id === targetUnit.id) {
+            // Same unit reorder
+            const oldIndex = sourceUnitClone.contents.findIndex((c: any) => c.id === activeId);
+            const newIndex = targetUnitClone.contents.findIndex((c: any) => c.id === overId);
 
-        // Insert into new
-        newModules.forEach((m: any) => m.units?.forEach((u: any) => {
-            if (u.id === overUnitId) {
-                const overIndex = u.contents.findIndex((c: any) => c.id === overId);
-                u.contents.splice(overIndex === -1 ? u.contents.length : overIndex, 0, activeContent);
-                u.contents.forEach((c: any, idx: number) => c.order_index = idx);
+            if (oldIndex !== newIndex && newIndex !== -1) {
+                sourceUnitClone.contents = arrayMove(sourceUnitClone.contents, oldIndex, newIndex);
+                // Update order indexes
+                sourceUnitClone.contents.forEach((c: any, idx: number) => c.order_index = idx);
+                setModules(newModules);
+
+                // Persist
+                setIsSaving(true);
+                try {
+                    await apiClient.put('CATALOG', `/api/courses/contents/${activeId}`, {
+                        orderIndex: newIndex
+                    });
+                } catch (e) { console.error(e); fetchData(); }
+                finally { setIsSaving(false); }
             }
-        }));
+        } else {
+            // Move to different unit
+            const oldIndex = sourceUnitClone.contents.findIndex((c: any) => c.id === activeId);
+            const itemToMove = sourceUnitClone.contents[oldIndex];
 
-        setModules(newModules);
+            // Remove from source
+            sourceUnitClone.contents.splice(oldIndex, 1);
 
-        setIsSaving(true);
-        try {
-            const finalUnit = newModules.flatMap((m: any) => m.units).find((u: any) => u.id === overUnitId);
-            const newIndex = finalUnit?.contents.findIndex((c: any) => c.id === activeId);
+            // Add to target
+            let newIndex;
+            if (overId === targetUnit.id) {
+                // Dropped on unit container -> add to end
+                newIndex = targetUnitClone.contents.length;
+            } else {
+                // Dropped on item -> insert before/after based on implementation, usually replace index
+                newIndex = targetUnitClone.contents.findIndex((c: any) => c.id === overId);
+                if (newIndex === -1) newIndex = targetUnitClone.contents.length;
+            }
 
-            await apiClient.put('CATALOG', `/api/courses/contents/${activeId}`, {
-                unitId: overUnitId,
-                orderIndex: newIndex
-            });
-        } catch (error) {
-            console.error("Failed to persist dnd", error);
-            fetchData();
-        } finally {
-            setIsSaving(false);
+            targetUnitClone.contents.splice(newIndex, 0, itemToMove);
+
+            // Update indexes both units
+            sourceUnitClone.contents.forEach((c: any, idx: number) => c.order_index = idx);
+            targetUnitClone.contents.forEach((c: any, idx: number) => c.order_index = idx);
+
+            setModules(newModules);
+
+            // Persist
+            setIsSaving(true);
+            try {
+                await apiClient.put('CATALOG', `/api/courses/contents/${activeId}`, {
+                    unitId: targetUnit.id,
+                    orderIndex: newIndex
+                });
+            } catch (e) { console.error(e); fetchData(); }
+            finally { setIsSaving(false); }
         }
     };
 
@@ -533,37 +641,15 @@ export default function CourseEditorPage({ params }: { params: { id: string } })
 
                             <div className="p-2 space-y-2">
                                 {module.units?.map((unit: any, uIdx: number) => (
-                                    <div key={unit.id} className="bg-white border border-gray-200 rounded-2xl p-4 ml-6 relative">
-                                        <div className="absolute -left-6 top-8 w-6 h-px bg-gray-200"></div>
-                                        <div className="absolute -left-6 top-[-10px] bottom-8 w-px bg-gray-200"></div>
-
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <AlignLeft className="w-4 h-4 text-gray-400" />
-                                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">UNIT {mIdx + 1}.{uIdx + 1}</span>
-                                                <h4 className="font-bold text-gray-700">{unit.title}</h4>
-                                            </div>
-                                            <button onClick={() => openContentModal(unit.id)} className="p-1 px-3 bg-gray-100 rounded-lg text-[10px] font-bold text-gray-600 hover:bg-gray-200 transition-colors uppercase tracking-widest flex items-center gap-1">
-                                                <Plus className="w-3 h-3" /> Content
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-1 pl-4 border-l-2 border-gray-100 ml-2 min-h-[40px]">
-                                            <SortableContext items={unit.contents?.map((c: any) => c.id) || []} strategy={verticalListSortingStrategy}>
-                                                {unit.contents?.map((content: any) => (
-                                                    <SortableContentItem
-                                                        key={content.id}
-                                                        content={content}
-                                                        onDelete={handleDeleteContent}
-                                                        onEdit={handleEditContent}
-                                                    />
-                                                ))}
-                                                {(!unit.contents || unit.contents.length === 0) && (
-                                                    <div className="text-xs text-gray-300 italic p-2">Drag content here</div>
-                                                )}
-                                            </SortableContext>
-                                        </div>
-                                    </div>
+                                    <DroppableUnit
+                                        key={unit.id}
+                                        unit={unit}
+                                        mIdx={mIdx}
+                                        uIdx={uIdx}
+                                        openContentModal={openContentModal}
+                                        handleDeleteContent={handleDeleteContent}
+                                        handleEditContent={handleEditContent}
+                                    />
                                 ))}
                             </div>
                         </div>

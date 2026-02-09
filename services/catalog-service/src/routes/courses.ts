@@ -173,7 +173,12 @@ courseRoutes.get('/:id/structure', async (c) => {
         .eq('course_id', id)
         .order('order_index', { ascending: true })
 
-    if (error) return c.json({ error: error.message }, 500)
+    if (error) {
+        console.error("[Structure] DB Error:", error);
+        return c.json({ error: error.message }, 500)
+    }
+    console.log(`[Structure] Fetching for course ${id}`);
+    console.log(`[Structure] Found ${modules?.length} modules`);
 
     // Determine if we need to migrate old contents (those without unit_id)
     // Fetch 'orphan' contents directly linked to course (if any exist in old schema style)
@@ -248,6 +253,7 @@ courseRoutes.post('/units/:id/contents', async (c) => {
             title: body.title,
             type: body.type, // video, quiz, etc
             content_url: body.contentUrl,
+            body: body.body,
             is_ai_generated: body.isAiGenerated || false,
             order_index: body.orderIndex || 0,
             // course_id: ... // Optional: we might want to keep redundant course_id for faster queries, or drop it.

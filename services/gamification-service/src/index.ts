@@ -29,7 +29,7 @@ app.route('/api/badges', badgeRoutes)
 app.route('/api/leaderboards', leaderboardRoutes)
 app.route('/api/challenges', challengeRoutes)
 
-const port = parseInt(process.env.PORT || '3006')
+const port = parseInt(process.env.PORT || '3008')
 
 console.log(`🎮 Gamification Service starting on port ${port}`)
 

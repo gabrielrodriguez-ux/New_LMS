@@ -30,6 +30,8 @@ export default function CohortDetailsPage({ params }: { params: { id: string } }
                     status, 
                     progress_pct, 
                     last_accessed_at,
+                    diploma_downloaded,
+                    fundae_questionnaire_completed,
                     user:users(first_name, last_name, avatar_url)
                 `)
                 .eq('cohort_id', id);
@@ -47,28 +49,36 @@ export default function CohortDetailsPage({ params }: { params: { id: string } }
                         status: 'in_progress',
                         progress_pct: 65,
                         last_accessed_at: new Date().toISOString(),
-                        user: { first_name: 'Roberto', last_name: 'Demo', avatar_url: null }
+                        user: { first_name: 'Roberto', last_name: 'Demo', avatar_url: null },
+                        diploma_downloaded: false,
+                        fundae_questionnaire_completed: false
                     },
                     {
                         id: 'mock-2',
                         status: 'completed',
                         progress_pct: 100,
                         last_accessed_at: new Date(Date.now() - 86400000).toISOString(),
-                        user: { first_name: 'Lucía', last_name: 'Demo', avatar_url: null }
+                        user: { first_name: 'Lucía', last_name: 'Demo', avatar_url: null },
+                        diploma_downloaded: true,
+                        fundae_questionnaire_completed: true
                     },
                     {
                         id: 'mock-3',
                         status: 'in_progress',
                         progress_pct: 30,
                         last_accessed_at: new Date(Date.now() - 172800000).toISOString(),
-                        user: { first_name: 'Andrés', last_name: 'Demo', avatar_url: null }
+                        user: { first_name: 'Andrés', last_name: 'Demo', avatar_url: null },
+                        diploma_downloaded: false,
+                        fundae_questionnaire_completed: false
                     },
                     {
                         id: 'mock-4',
                         status: 'in_progress',
                         progress_pct: 88,
                         last_accessed_at: new Date().toISOString(),
-                        user: { first_name: 'Carlos', last_name: 'Demo', avatar_url: null }
+                        user: { first_name: 'Carlos', last_name: 'Demo', avatar_url: null },
+                        diploma_downloaded: false,
+                        fundae_questionnaire_completed: true
                     }
                 ]);
             }
@@ -190,6 +200,8 @@ export default function CohortDetailsPage({ params }: { params: { id: string } }
                                 <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Student</th>
                                 <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
                                 <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Progress</th>
+                                <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Diploma</th>
+                                <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Quest. Fundae</th>
                                 <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Last Access</th>
                                 <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
@@ -244,6 +256,28 @@ export default function CohortDetailsPage({ params }: { params: { id: string } }
                                                 </div>
                                                 <span className="text-xs font-bold text-slate-700">{student.progress_pct}%</span>
                                             </div>
+                                        </td>
+                                        <td className="p-6 text-center">
+                                            {student.diploma_downloaded ? (
+                                                <div className="inline-flex p-1 bg-emerald-100 text-emerald-600 rounded-full">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                </div>
+                                            ) : (
+                                                <div className="inline-flex p-1 bg-slate-100 text-slate-300 rounded-full">
+                                                    <div className="w-4 h-4 rounded-full border-2 border-slate-300"></div>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="p-6 text-center">
+                                            {student.fundae_questionnaire_completed ? (
+                                                <div className="inline-flex p-1 bg-emerald-100 text-emerald-600 rounded-full">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                </div>
+                                            ) : (
+                                                <div className="inline-flex p-1 bg-slate-100 text-slate-300 rounded-full">
+                                                    <div className="w-4 h-4 rounded-full border-2 border-slate-300"></div>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-6 text-sm font-bold text-slate-500">
                                             {student.last_accessed_at ? new Date(student.last_accessed_at).toLocaleDateString() : 'Never'}

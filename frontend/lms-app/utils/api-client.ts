@@ -12,13 +12,21 @@ const SERVICES = {
     TENANT: process.env.NEXT_PUBLIC_TENANT_SERVICE_URL || 'http://localhost:3001',
 };
 
+import { supabase } from '@/lib/supabase';
+
 export const apiClient = {
     async get(service: keyof typeof SERVICES, path: string) {
         // For now, we simulate API calls or call them if available
         try {
             const url = `${SERVICES[service]}${path}`;
             console.log(`[API] Fetching ${url}`);
-            const response = await fetch(url);
+
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: HeadersInit = session?.access_token
+                ? { 'Authorization': `Bearer ${session.access_token}` }
+                : {};
+
+            const response = await fetch(url, { headers });
             if (!response.ok) {
                 console.error(`[API] Error ${response.status} from ${url}`);
                 throw new Error(`API call failed: ${response.status}`);
@@ -33,9 +41,15 @@ export const apiClient = {
 
     async post(service: keyof typeof SERVICES, path: string, data: any) {
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+                ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+            };
+
             const response = await fetch(`${SERVICES[service]}${path}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(data),
             });
             if (!response.ok) {
@@ -51,9 +65,15 @@ export const apiClient = {
 
     async put(service: keyof typeof SERVICES, path: string, data: any) {
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+                ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+            };
+
             const response = await fetch(`${SERVICES[service]}${path}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(data),
             });
             if (!response.ok) {
@@ -69,8 +89,14 @@ export const apiClient = {
 
     async delete(service: keyof typeof SERVICES, path: string) {
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: HeadersInit = session?.access_token
+                ? { 'Authorization': `Bearer ${session.access_token}` }
+                : {};
+
             const response = await fetch(`${SERVICES[service]}${path}`, {
                 method: 'DELETE',
+                headers,
             });
             if (!response.ok) {
                 const errText = await response.text();
