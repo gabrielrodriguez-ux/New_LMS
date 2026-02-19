@@ -1,0 +1,518 @@
+asyncapi: 2.6.0
+info:
+  title: ThePower LMS Events
+  version: 1.0.0
+  description: Modelo de eventos para plataforma LMS multi-tenant (CloudEvents 1.0)
+
+defaultContentType: application/cloudevents+json
+
+channels:
+  # === USER EVENTS ===
+  user.created:
+    publish:
+      operationId: onUserCreated
+      message:
+        $ref: '#/components/messages/UserCreated'
+
+  user.updated:
+    publish:
+      operationId: onUserUpdated
+      message:
+        $ref: '#/components/messages/UserUpdated'
+
+  user.deactivated:
+    publish:
+      operationId: onUserDeactivated
+      message:
+        $ref: '#/components/messages/UserDeactivated'
+
+  # === COURSE EVENTS ===
+  course.published:
+    publish:
+      operationId: onCoursePublished
+      message:
+        $ref: '#/components/messages/CoursePublished'
+
+  course.versioned:
+    publish:
+      operationId: onCourseVersioned
+      message:
+        $ref: '#/components/messages/CourseVersioned'
+
+  # === ENROLLMENT EVENTS ===
+  enrollment.assigned:
+    publish:
+      operationId: onEnrollmentAssigned
+      message:
+        $ref: '#/components/messages/EnrollmentAssigned'
+
+  enrollment.completed:
+    publish:
+      operationId: onEnrollmentCompleted
+      message:
+        $ref: '#/components/messages/EnrollmentCompleted'
+
+  enrollment.expired:
+    publish:
+      operationId: onEnrollmentExpired
+      message:
+        $ref: '#/components/messages/EnrollmentExpired'
+
+  # === PROGRESS EVENTS ===
+  progress.updated:
+    publish:
+      operationId: onProgressUpdated
+      message:
+        $ref: '#/components/messages/ProgressUpdated'
+
+  # === GAMIFICATION EVENTS ===
+  xp.awarded:
+    publish:
+      operationId: onXpAwarded
+      message:
+        $ref: '#/components/messages/XpAwarded'
+
+  level.up:
+    publish:
+      operationId: onLevelUp
+      message:
+        $ref: '#/components/messages/LevelUp'
+
+  badge.earned:
+    publish:
+      operationId: onBadgeEarned
+      message:
+        $ref: '#/components/messages/BadgeEarned'
+
+  challenge.completed:
+    publish:
+      operationId: onChallengeCompleted
+      message:
+        $ref: '#/components/messages/ChallengeCompleted'
+
+  # === CERTIFICATE EVENTS ===
+  certificate.issued:
+    publish:
+      operationId: onCertificateIssued
+      message:
+        $ref: '#/components/messages/CertificateIssued'
+
+  # === FUNDAE EVENTS ===
+  fundae.expedient.generated:
+    publish:
+      operationId: onExpedientGenerated
+      message:
+        $ref: '#/components/messages/ExpedientGenerated'
+
+  fundae.compliance.changed:
+    publish:
+      operationId: onComplianceChanged
+      message:
+        $ref: '#/components/messages/ComplianceChanged'
+
+  fundae.attendance.below_threshold:
+    publish:
+      operationId: onAttendanceBelowThreshold
+      message:
+        $ref: '#/components/messages/AttendanceBelowThreshold'
+
+  fundae.report.exported:
+    publish:
+      operationId: onReportExported
+      message:
+        $ref: '#/components/messages/ReportExported'
+
+components:
+  messages:
+    # === USER MESSAGES ===
+    UserCreated:
+      name: UserCreated
+      title: User Created
+      payload:
+        $ref: '#/components/schemas/UserEvent'
+
+    UserUpdated:
+      name: UserUpdated
+      title: User Updated
+      payload:
+        $ref: '#/components/schemas/UserEvent'
+
+    UserDeactivated:
+      name: UserDeactivated
+      title: User Deactivated
+      payload:
+        $ref: '#/components/schemas/UserEvent'
+
+    # === COURSE MESSAGES ===
+    CoursePublished:
+      name: CoursePublished
+      title: Course Published
+      payload:
+        $ref: '#/components/schemas/CourseEvent'
+
+    CourseVersioned:
+      name: CourseVersioned
+      title: Course Versioned
+      payload:
+        $ref: '#/components/schemas/CourseEvent'
+
+    # === ENROLLMENT MESSAGES ===
+    EnrollmentAssigned:
+      name: EnrollmentAssigned
+      title: Enrollment Assigned
+      payload:
+        $ref: '#/components/schemas/EnrollmentEvent'
+
+    EnrollmentCompleted:
+      name: EnrollmentCompleted
+      title: Enrollment Completed
+      payload:
+        $ref: '#/components/schemas/EnrollmentEvent'
+
+    EnrollmentExpired:
+      name: EnrollmentExpired
+      title: Enrollment Expired
+      payload:
+        $ref: '#/components/schemas/EnrollmentEvent'
+
+    # === PROGRESS MESSAGES ===
+    ProgressUpdated:
+      name: ProgressUpdated
+      title: Progress Updated
+      payload:
+        $ref: '#/components/schemas/ProgressEvent'
+
+    # === GAMIFICATION MESSAGES ===
+    XpAwarded:
+      name: XpAwarded
+      title: XP Awarded
+      payload:
+        $ref: '#/components/schemas/XpEvent'
+
+    LevelUp:
+      name: LevelUp
+      title: Level Up
+      payload:
+        $ref: '#/components/schemas/LevelEvent'
+
+    BadgeEarned:
+      name: BadgeEarned
+      title: Badge Earned
+      payload:
+        $ref: '#/components/schemas/BadgeEvent'
+
+    ChallengeCompleted:
+      name: ChallengeCompleted
+      title: Challenge Completed
+      payload:
+        $ref: '#/components/schemas/ChallengeEvent'
+
+    # === CERTIFICATE MESSAGES ===
+    CertificateIssued:
+      name: CertificateIssued
+      title: Certificate Issued
+      payload:
+        $ref: '#/components/schemas/CertificateEvent'
+
+    # === FUNDAE MESSAGES ===
+    ExpedientGenerated:
+      name: ExpedientGenerated
+      title: FUNDAE Expedient Generated
+      payload:
+        $ref: '#/components/schemas/ExpedientEvent'
+
+    ComplianceChanged:
+      name: ComplianceChanged
+      title: FUNDAE Compliance Changed
+      payload:
+        $ref: '#/components/schemas/ComplianceEvent'
+
+    AttendanceBelowThreshold:
+      name: AttendanceBelowThreshold
+      title: Attendance Below 75% Threshold
+      payload:
+        $ref: '#/components/schemas/AttendanceEvent'
+
+    ReportExported:
+      name: ReportExported
+      title: FUNDAE Report Exported
+      payload:
+        $ref: '#/components/schemas/ReportEvent'
+
+  schemas:
+    # CloudEvents envelope
+    CloudEventEnvelope:
+      type: object
+      required: [specversion, id, source, type, time]
+      properties:
+        specversion:
+          type: string
+          const: "1.0"
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+        type:
+          type: string
+        subject:
+          type: string
+        time:
+          type: string
+          format: date-time
+        datacontenttype:
+          type: string
+          default: application/json
+        tenant_id:
+          type: string
+          format: uuid
+        correlation_id:
+          type: string
+        causation_id:
+          type: string
+        schema_version:
+          type: string
+
+    # Event payloads
+    UserEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                email:
+                  type: string
+                roles:
+                  type: array
+                  items:
+                    type: string
+
+    CourseEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                course_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                version:
+                  type: integer
+                status:
+                  type: string
+
+    EnrollmentEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                enrollment_id:
+                  type: string
+                  format: uuid
+                user_id:
+                  type: string
+                  format: uuid
+                course_id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+
+    ProgressEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                course_id:
+                  type: string
+                  format: uuid
+                module_id:
+                  type: string
+                  format: uuid
+                progress_percentage:
+                  type: number
+                time_spent_seconds:
+                  type: integer
+
+    XpEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: integer
+                source:
+                  type: string
+                multiplier:
+                  type: number
+                total_xp:
+                  type: integer
+
+    LevelEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                previous_level:
+                  type: integer
+                new_level:
+                  type: integer
+                level_name:
+                  type: string
+
+    BadgeEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                badge_id:
+                  type: string
+                  format: uuid
+                badge_name:
+                  type: string
+
+    ChallengeEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                challenge_id:
+                  type: string
+                  format: uuid
+                xp_reward:
+                  type: integer
+
+    CertificateEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                certificate_id:
+                  type: string
+                  format: uuid
+                user_id:
+                  type: string
+                  format: uuid
+                course_id:
+                  type: string
+                  format: uuid
+                verification_url:
+                  type: string
+
+    ExpedientEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                expedient_id:
+                  type: string
+                  format: uuid
+                course_id:
+                  type: string
+                  format: uuid
+                empresa_cif:
+                  type: string
+                status:
+                  type: string
+
+    ComplianceEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                expedient_id:
+                  type: string
+                  format: uuid
+                previous_score:
+                  type: integer
+                new_score:
+                  type: integer
+                is_valid:
+                  type: boolean
+
+    AttendanceEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                course_id:
+                  type: string
+                  format: uuid
+                attendance_percentage:
+                  type: number
+                threshold:
+                  type: number
+
+    ReportEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                report_id:
+                  type: string
+                  format: uuid
+                format:
+                  type: string
+                  enum: [pdf, excel, xml]
+                url:
+                  type: string

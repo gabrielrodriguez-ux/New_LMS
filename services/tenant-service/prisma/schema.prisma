@@ -1,0 +1,70 @@
+// Prisma schema generated from Data Model
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                 String   @id @default(uuid())
+  name               String
+  slug               String   @unique
+  domain             String?
+  cif                String?  // For FUNDAE
+  sector             String?
+  branding           Json     @default("{}")
+  featureFlags       Json     @default("{}")
+  gamificationConfig Json     @default("{}")
+  notificationConfig Json     @default("{}")
+  status             String   @default("active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ssoConfigs SsoConfig[]
+  auditLogs  AuditLog[]
+
+  @@map("tenants")
+}
+
+model SsoConfig {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  provider         String   // saml, oauth2, azure_ad, google, okta
+  entityId         String   @map("entity_id")
+  ssoUrl           String?  @map("sso_url")
+  certificate      String?
+  autoProvisioning Boolean  @default(true) @map("auto_provisioning")
+  attributeMapping Json     @default("{}") @map("attribute_mapping")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, provider])
+  @@map("sso_configs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  userId     String?  @map("user_id")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  before     Json?
+  after      Json?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  timestamp  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, timestamp])
+  @@index([tenantId, resource])
+  @@map("audit_logs")
+}

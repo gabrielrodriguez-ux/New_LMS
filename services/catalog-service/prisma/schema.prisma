@@ -1,0 +1,471 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id                String    @id @default(uuid())
+  tenantId          String    @map("tenant_id")
+  title             String
+  description       String?
+  shortDescription  String?   @map("short_description")
+  thumbnailUrl      String?   @map("thumbnail_url")
+  hours             Decimal   @db.Decimal(5, 2)
+  level             String    @default("basico") // basico, intermedio, avanzado
+  familyProfessional String?  @map("family_professional")
+  promotion         String?   @map("promotion") // Added for cohort filtering
+  status            String    @default("draft") // draft, published, archived
+  version           Int       @default(1)
+  fundaeCompatible  Boolean   @default(false) @map("fundae_compatible")
+  tags              String[]  @default([])
+  createdBy         String?   @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  publishedAt       DateTime? @map("published_at")
+
+  modules  Module[]
+  versions CourseVersion[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, familyProfessional])
+  @@map("courses")
+}
+
+model Module {
+  id              String   @id @default(uuid())
+  courseId        String   @map("course_id")
+  title           String
+  description     String?
+  type            String   // video, pdf, text, quiz, scorm, lti
+  contentUrl      String?  @map("content_url")
+  durationMinutes Int      @default(0) @map("duration_minutes")
+  orderIndex      Int      @map("order_index")
+  isMandatory     Boolean  @default(true) @map("is_mandatory")
+  xpReward        Int      @default(50) @map("xp_reward")
+  metadata        Json     @default("{}") // For quiz questions, SCORM params, etc.
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  units Unit[] // Relation to added Unit model
+
+  @@index([courseId, orderIndex])
+  @@map("modules")
+}
+
+model Unit {
+  id          String   @id @default(uuid())
+  moduleId    String   @map("module_id")
+  title       String
+  orderIndex  Int      @map("order_index")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  module   Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  contents Content[]
+
+  @@index([moduleId, orderIndex])
+  @@map("units")
+}
+
+model Content {
+  id            String   @id @default(uuid())
+  unitId        String   @map("unit_id")
+  title         String
+  type          String   // video, quiz, text, scorm, nps
+  contentUrl    String?  @map("content_url")
+  body          String?  // text content
+  isAiGenerated Boolean  @default(false) @map("is_ai_generated")
+  orderIndex    Int      @map("order_index")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([unitId, orderIndex])
+  @@map("contents")
+}
+
+model CourseVersion {
+  id          String   @id @default(uuid())
+  courseId    String   @map("course_id")
+  version     Int
+  snapshot    Json     // Full course data at this version
+  changedBy   String?  @map("changed_by")
+  changedAt   DateTime @default(now()) @map("changed_at")
+  changeNotes String?  @map("change_notes")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, version])
+  @@map("course_versions")
+}
+
+model CourseTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  type        String   // onboarding, compliance, skills
+  structure   Json     // Template structure
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+
+  @@index([tenantId])
+  @@map("course_templates")
+}
+
+// --- IAM Models Merged for Prototype ---
+
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("client_id")
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  role         String?   @map("role")
+  jobTitle     String?   @map("job_title")
+  avatarUrl    String?   @map("avatar_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  deletedAt    DateTime? 
+  status       String?   
+  department   String?   
+  managerId    String?   
+  email        String?    @unique
+  dni          String?   
+  passwordHash String?   @map("password_hash")
+  preferences  Json?     
+  ssoId        String?   @map("sso_id")
+  lastLoginAt  DateTime? @map("last_login_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  userRoles UserRole[] 
+  sessions  Session[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String   // alumno, manager, docente, ld_manager, admin, c_level
+  displayName String   @map("display_name")
+  permissions Json     @default("[]")
+  isSystem    Boolean  @default(false) @map("is_system") // Predefined roles
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userRoles UserRole[]
+
+  @@unique([tenantId, name])
+  @@map("roles")
+}
+
+model UserRole {
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  grantedAt DateTime @default(now()) @map("granted_at")
+  grantedBy String?  @map("granted_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  tenantId    String   @map("tenant_id")
+  deviceInfo  String?  @map("device_info")
+  ipAddress   String?  @map("ip_address")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId, expiresAt])
+  @@map("sessions")
+}
+
+model ImportJob {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  status       String   @default("pending") // pending, processing, completed, failed
+  fileName     String   @map("file_name")
+  totalRows    Int      @default(0) @map("total_rows")
+  processedRows Int     @default(0) @map("processed_rows")
+  successRows  Int      @default(0) @map("success_rows")
+  errorRows    Int      @default(0) @map("error_rows")
+  errors       Json     @default("[]")
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+
+  @@index([tenantId, status])
+  @@map("import_jobs")
+}
+
+// --- Enrollment Service Models ---
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  userId     String   @map("user_id")
+  courseId   String   @map("course_id")
+  cohortId   String?  @map("cohort_id")
+  status     String   @default("assigned") // assigned, in_progress, completed, expired
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  deadline   DateTime?
+  startedAt  DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  progress   Int      @default(0)
+
+  @@unique([tenantId, userId, courseId])
+  @@index([tenantId, userId])
+  @@map("enrollments")
+}
+
+// --- Progress Service Models ---
+
+model Progress {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  userId           String   @map("user_id")
+  courseId         String   @map("course_id")
+  moduleId         String   @map("module_id")
+  status           String   @default("not_started") // not_started, in_progress, completed
+  timeSpentSeconds Int      @default(0) @map("time_spent_seconds")
+  score            Decimal? @db.Decimal(5, 2)
+  completedAt      DateTime? @map("completed_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, userId, moduleId])
+  @@map("progress")
+}
+
+// --- Comment Service Models ---
+
+model Comment {
+  id        String   @id @default(uuid())
+  courseId  String   @map("course_id")
+  userId    String   @map("user_id")
+  content   String
+  parentId  String?  @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("comments")
+}
+
+// --- Gamification Service Models ---
+
+model UserXp {
+  userId       String   @id @map("user_id")
+  tenantId     String   @map("tenant_id")
+  totalXp      Int      @default(0) @map("total_xp")
+  currentLevel Int      @default(1) @map("current_level")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, totalXp(sort: Desc)])
+  @@map("user_xp")
+}
+
+model XpTransaction {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  tenantId   String   @map("tenant_id")
+  amount     Int
+  source     String   // module_complete, course_complete, quiz_pass, challenge, streak, bonus
+  sourceId   String?  @map("source_id")
+  multiplier Decimal  @default(1.0) @db.Decimal(3, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, userId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("xp_transactions")
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  iconUrl     String?  @map("icon_url")
+  criteria    Json     // { type, threshold, conditions }
+  rarity      String   @default("common") // common, uncommon, rare, epic, legendary
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userBadges UserBadge[]
+
+  @@unique([tenantId, name])
+  @@map("badges")
+}
+
+model UserBadge {
+  userId   String   @map("user_id")
+  badgeId  String   @map("badge_id")
+  tenantId String   @map("tenant_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+  shared   Boolean  @default(false)
+
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@index([tenantId, earnedAt])
+  @@map("user_badges")
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  type        String   // weekly, bonus, special
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  xpReward    Int      @map("xp_reward")
+  criteria    Json     // { type, target, courseIds }
+  status      String   @default("upcoming") // upcoming, active, ended
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  participants ChallengeParticipant[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, startDate, endDate])
+  @@map("challenges")
+}
+
+model ChallengeParticipant {
+  userId      String   @map("user_id")
+  challengeId String   @map("challenge_id")
+  tenantId    String   @map("tenant_id")
+  progress    Int      @default(0)
+  completed   Boolean  @default(false)
+  completedAt DateTime? @map("completed_at")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, challengeId])
+  @@index([tenantId, challengeId, progress(sort: Desc)])
+  @@map("challenge_participants")
+}
+
+model LevelConfig {
+  level       Int    @id
+  tenantId    String @map("tenant_id")
+  xpRequired  Int    @map("xp_required")
+  name        String
+  description String?
+
+  @@unique([tenantId, level])
+  @@map("level_configs")
+}
+
+// --- Fundae Service Models ---
+
+model FundaeExpedient {
+  id              String    @id @default(uuid())
+  tenantId        String    @map("tenant_id")
+  courseId        String    @map("course_id")
+  cohortId        String?   @map("cohort_id")
+  empresaCif      String    @map("empresa_cif")
+  empresaNombre   String    @map("empresa_nombre")
+  empresaSector   String?   @map("empresa_sector")
+  status          String    @default("draft") // draft, validated, submitted, approved, rejected
+  complianceScore Int       @default(0) @map("compliance_score")
+  validationErrors Json     @default("[]") @map("validation_errors")
+  pdfUrl          String?   @map("pdf_url")
+  xmlUrl          String?   @map("xml_url")
+  docenteId       String?   @map("docente_id")
+  totalHours      Decimal   @db.Decimal(5, 2) @map("total_hours")
+  familyProfessional String? @map("family_professional")
+  createdBy       String    @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  validatedAt     DateTime? @map("validated_at")
+  submittedAt     DateTime? @map("submitted_at")
+
+  participants ExpedientParticipant[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, empresaCif])
+  @@map("fundae_expedients")
+}
+
+model ExpedientParticipant {
+  id             String    @id @default(uuid())
+  expedientId    String    @map("expedient_id")
+  userId         String    @map("user_id")
+  dni            String
+  fullName       String    @map("full_name")
+  attendancePercentage Decimal @default(0) @db.Decimal(5, 2) @map("attendance_percentage")
+  meetsThreshold Boolean   @default(false) @map("meets_threshold")
+  signature      String?
+  signedAt       DateTime? @map("signed_at")
+
+  expedient FundaeExpedient @relation(fields: [expedientId], references: [id], onDelete: Cascade)
+
+  @@unique([expedientId, userId])
+  @@map("expedient_participants")
+}
+
+model FundaeAttendance {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  userId          String   @map("user_id")
+  courseId        String   @map("course_id")
+  expedientId     String?  @map("expedient_id")
+  totalRequiredHours Decimal @db.Decimal(5, 2) @map("total_required_hours")
+  attendedHours   Decimal  @default(0) @db.Decimal(5, 2) @map("attended_hours")
+  attendancePercentage Decimal @default(0) @db.Decimal(5, 2) @map("attendance_percentage")
+  method          String   @default("platform_access") // platform_access, qr, biometric
+  meetsThreshold  Boolean  @default(false) @map("meets_threshold")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  records AttendanceRecord[]
+
+  @@unique([tenantId, userId, courseId])
+  @@index([tenantId, expedientId])
+  @@map("fundae_attendance")
+}
+
+model AttendanceRecord {
+  id           String   @id @default(uuid())
+  attendanceId String   @map("attendance_id")
+  timestamp    DateTime @default(now())
+  hours        Decimal  @db.Decimal(5, 2)
+  method       String   // platform_access, qr, biometric
+  verifiedBy   String?  @map("verified_by")
+  notes        String?
+  isException  Boolean  @default(false) @map("is_exception") // IT issues exception
+
+  attendance FundaeAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@index([attendanceId, timestamp])
+  @@map("attendance_records")
+}
+
+model Docente {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  userId         String   @map("user_id")
+  specialties    String[] @default([])
+  certifications Json     @default("[]")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, userId])
+  @@map("docentes")
+}

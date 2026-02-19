@@ -1,0 +1,923 @@
+openapi: 3.0.3
+info:
+  title: ThePower LMS API
+  description: API multi-tenant para plataforma LMS B2B con FUNDAE compliance
+  version: 1.0.0
+  contact:
+    name: ThePower Education
+servers:
+  - url: https://api.thepower.education/v1
+    description: Production
+  - url: https://api.staging.thepower.education/v1
+    description: Staging
+
+security:
+  - BearerAuth: []
+  - OAuth2: [read, write]
+
+tags:
+  - name: Tenants
+    description: Configuración multi-tenant
+  - name: Users
+    description: Gestión de usuarios y RBAC
+  - name: Courses
+    description: Catálogo y contenido
+  - name: Enrollments
+    description: Inscripciones y asignaciones
+  - name: Progress
+    description: Progreso de aprendizaje
+  - name: Gamification
+    description: XP, badges, leaderboards
+  - name: Certificates
+    description: Certificados
+  - name: FUNDAE
+    description: Expedientes y compliance FUNDAE
+
+paths:
+  # === TENANTS ===
+  /tenants/{tenantId}/settings:
+    get:
+      tags: [Tenants]
+      summary: Obtener configuración del tenant
+      operationId: getTenantSettings
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+      responses:
+        '200':
+          description: Configuración del tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSettings'
+    put:
+      tags: [Tenants]
+      summary: Actualizar configuración del tenant
+      operationId: updateTenantSettings
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantSettingsUpdate'
+      responses:
+        '200':
+          description: Configuración actualizada
+
+  /tenants/{tenantId}/sso/config:
+    post:
+      tags: [Tenants]
+      summary: Configurar SSO del tenant
+      operationId: configureSso
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SsoConfig'
+      responses:
+        '201':
+          description: SSO configurado
+
+  # === USERS ===
+  /users:
+    get:
+      tags: [Users]
+      summary: Listar usuarios del tenant
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/cursor'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, pending]
+      responses:
+        '200':
+          description: Lista paginada de usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+
+  /users/import:
+    post:
+      tags: [Users]
+      summary: Importar usuarios en bulk (CSV/Excel)
+      operationId: importUsers
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                validateOnly:
+                  type: boolean
+                  default: false
+      responses:
+        '202':
+          description: Importación iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+
+  /users/{userId}/roles:
+    put:
+      tags: [Users]
+      summary: Asignar roles a usuario
+      operationId: setUserRoles
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Roles asignados
+
+  /users/deactivate:
+    post:
+      tags: [Users]
+      summary: Desactivar usuarios en bulk
+      operationId: deactivateUsers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Usuarios desactivados
+
+  # === COURSES ===
+  /courses:
+    post:
+      tags: [Courses]
+      summary: Crear curso
+      operationId: createCourse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCreate'
+      responses:
+        '201':
+          description: Curso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+
+  /courses/{courseId}:
+    put:
+      tags: [Courses]
+      summary: Actualizar curso
+      operationId: updateCourse
+      parameters:
+        - $ref: '#/components/parameters/courseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseUpdate'
+      responses:
+        '200':
+          description: Curso actualizado
+
+  /courses/{courseId}/publish:
+    post:
+      tags: [Courses]
+      summary: Publicar curso
+      operationId: publishCourse
+      parameters:
+        - $ref: '#/components/parameters/courseId'
+      responses:
+        '200':
+          description: Curso publicado
+
+  /courses/{courseId}/modules:
+    post:
+      tags: [Courses]
+      summary: Agregar módulo al curso
+      operationId: addModule
+      parameters:
+        - $ref: '#/components/parameters/courseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModuleCreate'
+      responses:
+        '201':
+          description: Módulo agregado
+
+  # === ENROLLMENTS ===
+  /enrollments:
+    get:
+      tags: [Enrollments]
+      summary: Listar inscripciones
+      operationId: listEnrollments
+      parameters:
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/cursor'
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: courseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [assigned, in_progress, completed, expired]
+      responses:
+        '200':
+          description: Lista de inscripciones
+
+  /enrollments/assign:
+    post:
+      tags: [Enrollments]
+      summary: Asignar cursos a usuarios (bulk)
+      operationId: assignEnrollments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentAssign'
+      responses:
+        '201':
+          description: Inscripciones creadas
+
+  # === PROGRESS ===
+  /progress:
+    get:
+      tags: [Progress]
+      summary: Obtener progreso
+      operationId: getProgress
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: courseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datos de progreso
+
+  /progress/events:
+    post:
+      tags: [Progress]
+      summary: Registrar evento de progreso (xAPI-friendly)
+      operationId: recordProgressEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressEvent'
+      responses:
+        '201':
+          description: Evento registrado
+
+  # === GAMIFICATION ===
+  /gamification/profile:
+    get:
+      tags: [Gamification]
+      summary: Obtener perfil de gamificación del usuario actual
+      operationId: getGamificationProfile
+      responses:
+        '200':
+          description: Perfil con XP, nivel, badges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfile'
+
+  /leaderboards:
+    get:
+      tags: [Gamification]
+      summary: Obtener leaderboard
+      operationId: getLeaderboard
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [global, department, team, course, challenge]
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [weekly, monthly, all_time]
+        - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Ranking de usuarios
+
+  /challenges/{challengeId}/complete:
+    post:
+      tags: [Gamification]
+      summary: Marcar challenge como completado
+      operationId: completeChallenge
+      parameters:
+        - name: challengeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Challenge completado, XP otorgado
+
+  # === CERTIFICATES ===
+  /certificates/issue:
+    post:
+      tags: [Certificates]
+      summary: Emitir certificado
+      operationId: issueCertificate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, courseId]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                courseId:
+                  type: string
+                  format: uuid
+                templateId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Certificado emitido
+
+  /certificates/{certificateId}:
+    get:
+      tags: [Certificates]
+      summary: Obtener certificado
+      operationId: getCertificate
+      parameters:
+        - name: certificateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datos del certificado
+
+  # === FUNDAE ===
+  /fundae/expedients/generate:
+    post:
+      tags: [FUNDAE]
+      summary: Generar expediente FUNDAE
+      operationId: generateExpedient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpedientGenerate'
+      responses:
+        '201':
+          description: Expediente generado
+
+  /fundae/expedients/{expedientId}/validate:
+    post:
+      tags: [FUNDAE]
+      summary: Validar expediente contra reglas FUNDAE
+      operationId: validateExpedient
+      parameters:
+        - name: expedientId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resultado de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpedientValidation'
+
+  /fundae/attendance/record:
+    post:
+      tags: [FUNDAE]
+      summary: Registrar asistencia
+      operationId: recordAttendance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceRecord'
+      responses:
+        '201':
+          description: Asistencia registrada
+
+  /fundae/reports/export:
+    get:
+      tags: [FUNDAE]
+      summary: Exportar reportes FUNDAE
+      operationId: exportFundaeReport
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, excel, xml]
+        - name: expedientId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: courseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archivo exportado
+          content:
+            application/pdf: {}
+            application/vnd.ms-excel: {}
+            application/xml: {}
+
+  # === AUDIT ===
+  /audit/logs:
+    get:
+      tags: [Tenants]
+      summary: Obtener logs de auditoría
+      operationId: getAuditLogs
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: action
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Logs de auditoría
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            read: Read access
+            write: Write access
+
+  parameters:
+    tenantId:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    courseId:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    pageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+
+  schemas:
+    TenantSettings:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        domain:
+          type: string
+        cif:
+          type: string
+        branding:
+          type: object
+          properties:
+            logoUrl:
+              type: string
+            primaryColor:
+              type: string
+            secondaryColor:
+              type: string
+        featureFlags:
+          type: object
+          additionalProperties:
+            type: boolean
+        gamificationConfig:
+          $ref: '#/components/schemas/GamificationConfig'
+        notificationConfig:
+          type: object
+
+    TenantSettingsUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        branding:
+          type: object
+        featureFlags:
+          type: object
+        gamificationConfig:
+          $ref: '#/components/schemas/GamificationConfig'
+        notificationConfig:
+          type: object
+
+    GamificationConfig:
+      type: object
+      properties:
+        leaderboardEnabled:
+          type: boolean
+        leaderboardScopes:
+          type: array
+          items:
+            type: string
+            enum: [global, department, team]
+        optOutEnabled:
+          type: boolean
+        xpRules:
+          type: object
+        antiCheatEnabled:
+          type: boolean
+
+    SsoConfig:
+      type: object
+      required: [provider, entityId]
+      properties:
+        provider:
+          type: string
+          enum: [saml, oauth2, azure_ad, google, okta]
+        entityId:
+          type: string
+        ssoUrl:
+          type: string
+        certificate:
+          type: string
+        autoProvisioning:
+          type: boolean
+        attributeMapping:
+          type: object
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        dni:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, pending]
+        roles:
+          type: array
+          items:
+            type: string
+
+    UserList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        nextCursor:
+          type: string
+        totalCount:
+          type: integer
+
+    ImportJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        totalRows:
+          type: integer
+        processedRows:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        hours:
+          type: number
+        level:
+          type: string
+        familyProfessional:
+          type: string
+        status:
+          type: string
+          enum: [draft, published, archived]
+        fundaeCompatible:
+          type: boolean
+        version:
+          type: integer
+
+    CourseCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        hours:
+          type: number
+        level:
+          type: string
+        familyProfessional:
+          type: string
+        fundaeCompatible:
+          type: boolean
+
+    CourseUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        hours:
+          type: number
+        level:
+          type: string
+
+    ModuleCreate:
+      type: object
+      required: [title, type]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [video, pdf, text, quiz, scorm]
+        contentUrl:
+          type: string
+        durationMinutes:
+          type: integer
+        orderIndex:
+          type: integer
+        isMandatory:
+          type: boolean
+
+    EnrollmentAssign:
+      type: object
+      required: [userIds, courseIds]
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        courseIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        cohortId:
+          type: string
+          format: uuid
+        deadline:
+          type: string
+          format: date-time
+        sendNotification:
+          type: boolean
+          default: true
+
+    ProgressEvent:
+      type: object
+      required: [userId, moduleId, verb]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        courseId:
+          type: string
+          format: uuid
+        moduleId:
+          type: string
+          format: uuid
+        verb:
+          type: string
+          enum: [started, progressed, completed, scored]
+        score:
+          type: number
+        duration:
+          type: integer
+          description: Tiempo en segundos
+
+    GamificationProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        totalXp:
+          type: integer
+        currentLevel:
+          type: integer
+        levelName:
+          type: string
+        xpToNextLevel:
+          type: integer
+        badges:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              iconUrl:
+                type: string
+              earnedAt:
+                type: string
+                format: date-time
+        recentXpTransactions:
+          type: array
+          items:
+            type: object
+
+    ExpedientGenerate:
+      type: object
+      required: [courseId, participantIds]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        cohortId:
+          type: string
+          format: uuid
+        participantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        docenteId:
+          type: string
+          format: uuid
+
+    ExpedientValidation:
+      type: object
+      properties:
+        expedientId:
+          type: string
+          format: uuid
+        complianceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        isValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              field:
+                type: string
+
+    AttendanceRecord:
+      type: object
+      required: [userId, courseId, hours]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        courseId:
+          type: string
+          format: uuid
+        expedientId:
+          type: string
+          format: uuid
+        hours:
+          type: number
+        method:
+          type: string
+          enum: [platform_access, qr, biometric]
+        timestamp:
+          type: string
+          format: date-time

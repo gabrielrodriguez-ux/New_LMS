@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  userId     String   @map("user_id")
+  courseId   String   @map("course_id")
+  cohortId   String?  @map("cohort_id")
+  status     String   @default("assigned") // assigned, in_progress, completed, expired
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  deadline   DateTime?
+  startedAt  DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  progress   Int      @default(0)
+
+  @@unique([tenantId, userId, courseId])
+  @@index([tenantId, userId])
+  @@map("enrollments")
+}

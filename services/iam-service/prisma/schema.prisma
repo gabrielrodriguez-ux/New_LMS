@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id                String    @id @default(uuid())
+  tenantId          String    @map("tenant_id")
+  title             String
+  description       String?
+  shortDescription  String?   @map("short_description")
+  thumbnailUrl      String?   @map("thumbnail_url")
+  hours             Decimal   @db.Decimal(5, 2)
+  level             String    @default("basico") // basico, intermedio, avanzado
+  familyProfessional String?  @map("family_professional")
+  promotion         String?   @map("promotion") // Added for cohort filtering
+  status            String    @default("draft") // draft, published, archived
+  version           Int       @default(1)
+  fundaeCompatible  Boolean   @default(false) @map("fundae_compatible")
+  tags              String[]  @default([])
+  createdBy         String?   @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  publishedAt       DateTime? @map("published_at")
+
+  modules  Module[]
+  versions CourseVersion[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, familyProfessional])
+  @@map("courses")
+}
+
+model Module {
+  id              String   @id @default(uuid())
+  courseId        String   @map("course_id")
+  title           String
+  description     String?
+  type            String   // video, pdf, text, quiz, scorm, lti
+  contentUrl      String?  @map("content_url")
+  durationMinutes Int      @default(0) @map("duration_minutes")
+  orderIndex      Int      @map("order_index")
+  isMandatory     Boolean  @default(true) @map("is_mandatory")
+  xpReward        Int      @default(50) @map("xp_reward")
+  metadata        Json     @default("{}") // For quiz questions, SCORM params, etc.
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  units Unit[] // Relation to added Unit model
+
+  @@index([courseId, orderIndex])
+  @@map("modules")
+}
+
+model Unit {
+  id          String   @id @default(uuid())
+  moduleId    String   @map("module_id")
+  title       String
+  orderIndex  Int      @map("order_index")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  module   Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  contents Content[]
+
+  @@index([moduleId, orderIndex])
+  @@map("units")
+}
+
+model Content {
+  id            String   @id @default(uuid())
+  unitId        String   @map("unit_id")
+  title         String
+  type          String   // video, quiz, text, scorm, nps
+  contentUrl    String?  @map("content_url")
+  body          String?  // text content
+  isAiGenerated Boolean  @default(false) @map("is_ai_generated")
+  orderIndex    Int      @map("order_index")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([unitId, orderIndex])
+  @@map("contents")
+}
+
+model CourseVersion {
+  id          String   @id @default(uuid())
+  courseId    String   @map("course_id")
+  version     Int
+  snapshot    Json     // Full course data at this version
+  changedBy   String?  @map("changed_by")
+  changedAt   DateTime @default(now()) @map("changed_at")
+  changeNotes String?  @map("change_notes")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, version])
+  @@map("course_versions")
+}
+
+model CourseTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  type        String   // onboarding, compliance, skills
+  structure   Json     // Template structure
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+
+  @@index([tenantId])
+  @@map("course_templates")
+}
+
+// --- IAM Models Merged for Prototype ---
+
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("client_id")
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  role         String?   @map("role")
+  jobTitle     String?   @map("job_title")
+  avatarUrl    String?   @map("avatar_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  deletedAt    DateTime? 
+  status       String?   
+  department   String?   
+  managerId    String?   
+  email        String?    @unique
+  dni          String?   
+  passwordHash String?   @map("password_hash")
+  preferences  Json?     
+  ssoId        String?   @map("sso_id")
+  lastLoginAt  DateTime? @map("last_login_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  userRoles UserRole[] 
+  sessions  Session[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String   // alumno, manager, docente, ld_manager, admin, c_level
+  displayName String   @map("display_name")
+  permissions Json     @default("[]")
+  isSystem    Boolean  @default(false) @map("is_system") // Predefined roles
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userRoles UserRole[]
+
+  @@unique([tenantId, name])
+  @@map("roles")
+}
+
+model UserRole {
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  grantedAt DateTime @default(now()) @map("granted_at")
+  grantedBy String?  @map("granted_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  tenantId    String   @map("tenant_id")
+  deviceInfo  String?  @map("device_info")
+  ipAddress   String?  @map("ip_address")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId, expiresAt])
+  @@map("sessions")
+}
+
+model ImportJob {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  status       String   @default("pending") // pending, processing, completed, failed
+  fileName     String   @map("file_name")
+  totalRows    Int      @default(0) @map("total_rows")
+  processedRows Int     @default(0) @map("processed_rows")
+  successRows  Int      @default(0) @map("success_rows")
+  errorRows    Int      @default(0) @map("error_rows")
+  errors       Json     @default("[]")
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+
+  @@index([tenantId, status])
+  @@map("import_jobs")
+}

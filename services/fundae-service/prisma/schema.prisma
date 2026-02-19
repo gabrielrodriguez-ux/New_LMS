@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FundaeExpedient {
+  id              String    @id @default(uuid())
+  tenantId        String    @map("tenant_id")
+  courseId        String    @map("course_id")
+  cohortId        String?   @map("cohort_id")
+  empresaCif      String    @map("empresa_cif")
+  empresaNombre   String    @map("empresa_nombre")
+  empresaSector   String?   @map("empresa_sector")
+  status          String    @default("draft") // draft, validated, submitted, approved, rejected
+  complianceScore Int       @default(0) @map("compliance_score")
+  validationErrors Json     @default("[]") @map("validation_errors")
+  pdfUrl          String?   @map("pdf_url")
+  xmlUrl          String?   @map("xml_url")
+  docenteId       String?   @map("docente_id")
+  totalHours      Decimal   @db.Decimal(5, 2) @map("total_hours")
+  familyProfessional String? @map("family_professional")
+  createdBy       String    @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  validatedAt     DateTime? @map("validated_at")
+  submittedAt     DateTime? @map("submitted_at")
+
+  participants ExpedientParticipant[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, empresaCif])
+  @@map("fundae_expedients")
+}
+
+model ExpedientParticipant {
+  id             String    @id @default(uuid())
+  expedientId    String    @map("expedient_id")
+  userId         String    @map("user_id")
+  dni            String
+  fullName       String    @map("full_name")
+  attendancePercentage Decimal @default(0) @db.Decimal(5, 2) @map("attendance_percentage")
+  meetsThreshold Boolean   @default(false) @map("meets_threshold")
+  signature      String?
+  signedAt       DateTime? @map("signed_at")
+
+  expedient FundaeExpedient @relation(fields: [expedientId], references: [id], onDelete: Cascade)
+
+  @@unique([expedientId, userId])
+  @@map("expedient_participants")
+}
+
+model FundaeAttendance {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  userId          String   @map("user_id")
+  courseId        String   @map("course_id")
+  expedientId     String?  @map("expedient_id")
+  totalRequiredHours Decimal @db.Decimal(5, 2) @map("total_required_hours")
+  attendedHours   Decimal  @default(0) @db.Decimal(5, 2) @map("attended_hours")
+  attendancePercentage Decimal @default(0) @db.Decimal(5, 2) @map("attendance_percentage")
+  method          String   @default("platform_access") // platform_access, qr, biometric
+  meetsThreshold  Boolean  @default(false) @map("meets_threshold")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  records AttendanceRecord[]
+
+  @@unique([tenantId, userId, courseId])
+  @@index([tenantId, expedientId])
+  @@map("fundae_attendance")
+}
+
+model AttendanceRecord {
+  id           String   @id @default(uuid())
+  attendanceId String   @map("attendance_id")
+  timestamp    DateTime @default(now())
+  hours        Decimal  @db.Decimal(5, 2)
+  method       String   // platform_access, qr, biometric
+  verifiedBy   String?  @map("verified_by")
+  notes        String?
+  isException  Boolean  @default(false) @map("is_exception") // IT issues exception
+
+  attendance FundaeAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@index([attendanceId, timestamp])
+  @@map("attendance_records")
+}
+
+model Docente {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  userId         String   @map("user_id")
+  specialties    String[] @default([])
+  certifications Json     @default("[]")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, userId])
+  @@map("docentes")
+}
